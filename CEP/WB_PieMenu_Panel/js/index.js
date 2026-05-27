@@ -454,7 +454,7 @@ function addEffectField(card, idx) {
 
     input.addEventListener('input', function() {
         if (timer) clearTimeout(timer);
-        delete this.dataset.matchName;
+        if (!g_programmaticEffectSet) delete this.dataset.matchName;
         timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
         triggerAutoSave();
     });
@@ -489,8 +489,10 @@ function searchAndShow(input, dropdown, query) {
             e.preventDefault();
             var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
+            g_programmaticEffectSet = true;
             input.value = displayName;
             input.dataset.matchName = matchName;
+            g_programmaticEffectSet = false;
             var idx = input.id.replace('itemEffect_', '');
             items[curMenu][curPage][idx].effect = matchName;
             items[curMenu][curPage][idx].effectDisplay = displayName;
@@ -553,6 +555,7 @@ function formatKeys(key, mod) {
 }
 
 var isRecording = false;
+var g_programmaticEffectSet = false;
 function startRecording(inputEl, btnEl, callback) {
     isRecording = true;
     inputEl.value = '...';
