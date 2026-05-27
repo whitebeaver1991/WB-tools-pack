@@ -211,7 +211,6 @@ function collectFromUI() {
         if (el) items[curMenu][curPage][i].name = el.value;
         el = document.getElementById('itemEffect_' + i);
         if (el) {
-            items[curMenu][curPage][i].effect = (el._getMatchName ? el._getMatchName() : '') || el.value;
             items[curMenu][curPage][i].effectDisplay = el.value;
         }
         el = document.getElementById('itemImage_' + i);
@@ -429,7 +428,6 @@ function addEffectField(card, idx) {
     input.autocomplete = 'off';
     input.value = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
     input.style.flex = '1';
-    input.addEventListener('input', triggerAutoSave);
     row.appendChild(input);
 
     var dropdown = document.createElement('div');
@@ -438,11 +436,21 @@ function addEffectField(card, idx) {
     wrapper.appendChild(dropdown);
     card.appendChild(wrapper);
 
-    // closure-scoped match name — survives CEF event timing
-    var currentMatchName = items[curMenu][curPage][idx].effect || '';
     var isSelecting = false;
-
+    input._isSelecting = function() { return isSelecting; };
+    input._setSelecting = function(v) { isSelecting = v; };
     var timer = null;
+
+    input.addEventListener('input', function() {
+        if (isSelecting) return;
+        if (timer) clearTimeout(timer);
+        items[curMenu][curPage][idx].effect = this.value;
+        items[curMenu][curPage][idx].effectDisplay = this.value;
+        timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
+        triggerAutoSave();
+    });
+
+    input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
     input.addEventListener('focus', function() {
         if (g_effectsCache) return;
         evalScript('getAllEffects()').then(function(raw) {
@@ -454,23 +462,8 @@ function addEffectField(card, idx) {
                 if (!map[match]) { map[match] = true; g_effectsCache.push({ name: name, match: match }); }
             });
         });
+        if (input.value) searchAndShow(input, dropdown, input.value);
     });
-
-    input.addEventListener('input', function() {
-        if (isSelecting) return;
-        if (timer) clearTimeout(timer);
-        currentMatchName = '';
-        timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
-        triggerAutoSave();
-    });
-
-    input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
-    input.addEventListener('focus', function() { if (input.value) searchAndShow(input, dropdown, input.value); });
-
-    // Patch collectFromUI for this input
-    var origIdx = idx;
-    input._getMatchName = function() { return currentMatchName; };
-    input._getIdx = function() { return origIdx; };
 }
 
 function searchAndShow(input, dropdown, query) {
@@ -499,11 +492,10 @@ function searchAndShow(input, dropdown, query) {
             e.preventDefault();
             var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
-            isSelecting = true;
+            if (input._setSelecting) input._setSelecting(true);
             input.value = displayName;
-            currentMatchName = matchName;
-            isSelecting = false;
-            var idx = input.id.replace('itemEffect_', '');
+            if (input._setSelecting) input._setSelecting(false);
+            var idx = parseInt(input.id.replace('itemEffect_', ''));
             items[curMenu][curPage][idx].effect = matchName;
             items[curMenu][curPage][idx].effectDisplay = displayName;
             dropdown.style.display = 'none';
