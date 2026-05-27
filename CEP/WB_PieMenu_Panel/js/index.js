@@ -206,7 +206,7 @@ function collectFromUI() {
         var el = document.getElementById('itemName_' + i);
         if (el) items[curMenu][curPage][i].name = el.value;
         el = document.getElementById('itemEffect_' + i);
-        if (el) items[curMenu][curPage][i].effect = el.value;
+        if (el) items[curMenu][curPage][i].effect = el.dataset.matchName || el.value;
         el = document.getElementById('itemImage_' + i);
         if (el) items[curMenu][curPage][i].image = el.value;
         el = document.getElementById('itemSize_' + i);
@@ -431,6 +431,7 @@ function addEffectField(card, idx) {
 
     input.addEventListener('input', function() {
         if (timer) clearTimeout(timer);
+        delete this.dataset.matchName;
         timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
         triggerAutoSave();
     });
@@ -463,8 +464,10 @@ function searchAndShow(input, dropdown, query) {
         item.appendChild(matchSpan);
         item.addEventListener('mousedown', function(e) {
             e.preventDefault();
+            var matchName = this.querySelector('.effect-match').textContent;
             input.value = this.querySelector('.effect-name').textContent;
-            items[curMenu][curPage][input.id.replace('itemEffect_', '')].effect = this.querySelector('.effect-match').textContent;
+            input.dataset.matchName = matchName;
+            items[curMenu][curPage][input.id.replace('itemEffect_', '')].effect = matchName;
             dropdown.style.display = 'none';
             triggerAutoSave();
         });
