@@ -211,7 +211,7 @@ function collectFromUI() {
         if (el) items[curMenu][curPage][i].name = el.value;
         el = document.getElementById('itemEffect_' + i);
         if (el) {
-            items[curMenu][curPage][i].effect = el.dataset.matchName || el.value;
+            items[curMenu][curPage][i].effect = (el._getMatchName ? el._getMatchName() : '') || el.value;
             items[curMenu][curPage][i].effectDisplay = el.value;
         }
         el = document.getElementById('itemImage_' + i);
@@ -438,6 +438,9 @@ function addEffectField(card, idx) {
     wrapper.appendChild(dropdown);
     card.appendChild(wrapper);
 
+    // closure-scoped match name — survives CEF event timing
+    var currentMatchName = items[curMenu][curPage][idx].effect || '';
+
     var timer = null;
     input.addEventListener('focus', function() {
         if (g_effectsCache) return;
@@ -454,13 +457,18 @@ function addEffectField(card, idx) {
 
     input.addEventListener('input', function() {
         if (timer) clearTimeout(timer);
-        if (!g_programmaticEffectSet) delete this.dataset.matchName;
+        currentMatchName = '';
         timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
         triggerAutoSave();
     });
 
     input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
     input.addEventListener('focus', function() { if (input.value) searchAndShow(input, dropdown, input.value); });
+
+    // Patch collectFromUI for this input
+    var origIdx = idx;
+    input._getMatchName = function() { return currentMatchName; };
+    input._getIdx = function() { return origIdx; };
 }
 
 function searchAndShow(input, dropdown, query) {
@@ -489,10 +497,8 @@ function searchAndShow(input, dropdown, query) {
             e.preventDefault();
             var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
-            g_programmaticEffectSet = true;
             input.value = displayName;
-            input.dataset.matchName = matchName;
-            g_programmaticEffectSet = false;
+            currentMatchName = matchName;
             var idx = input.id.replace('itemEffect_', '');
             items[curMenu][curPage][idx].effect = matchName;
             items[curMenu][curPage][idx].effectDisplay = displayName;
@@ -555,7 +561,6 @@ function formatKeys(key, mod) {
 }
 
 var isRecording = false;
-var g_programmaticEffectSet = false;
 function startRecording(inputEl, btnEl, callback) {
     isRecording = true;
     inputEl.value = '...';
