@@ -15,7 +15,8 @@ var LANG = [
       winAlpha:'Win Opacity', bgAlpha:'Bg Alpha', bgColor:'Bg Color', glowColor:'Glow Color',
       glowIntensity:'Glow Intensity', imgDist:'Icon Dist', textDist:'Text Dist',
       textSize:'Text Size', menuScale:'Menu Scale',
-      pieMenu:'Pie Menu', cep:'CEP Panel',
+       pieCount:'Pie Sectors', quickCount:'Quick Slots',
+       pieMenu:'Pie Menu', cep:'CEP Panel',
        numpad:'Numpad',
        about:'About',
       numpadHint:'F13-F22 (requires pairing)',
@@ -28,6 +29,7 @@ var LANG = [
       winAlpha:'窗口透明', bgAlpha:'背景透明', bgColor:'背景色', glowColor:'辉光色',
       glowIntensity:'辉光强度', imgDist:'图标距离', textDist:'文字距离',
        textSize:'文字大小', menuScale:'菜单缩放',
+         pieCount:'饼图扇区', quickCount:'快捷槽位',
        pieMenu:'Pie菜单', cep:'CEP面板',
         numpad:'数字键盘',
          about:'关于',
@@ -167,8 +169,8 @@ function collectFromUI() {
     if (ba) bgAlpha = parseInt(ba.value) || 60;
     var bav = document.getElementById('bgAlphaValue');
     if (bav) bav.textContent = bgAlpha;
-    var t = document.getElementById('numpadToggle');
-    if (t) numpadEnabled = t.checked;
+    var nt = document.getElementById('numpadToggle');
+    if (nt) numpadEnabled = nt.checked;
     var bc = document.getElementById('bgColorInput');
     if (bc) bgColor = bc.value.replace('#', '').toLowerCase();
     var bct = document.getElementById('bgColorText');
@@ -309,9 +311,25 @@ function updateGlobals() {
     if (ms) ms.value = menuScale;
     var msv = document.getElementById('menuScaleValue');
     if (msv) msv.textContent = menuScale + '%';
+    var pc = document.getElementById('pieCountSlider');
+    if (pc) pieCount = parseInt(pc.value) || 4;
+    var pcv = document.getElementById('pieCountValue');
+    if (pcv) pcv.textContent = pieCount;
+    var qc = document.getElementById('quickCountSlider');
+    if (qc) quickCount = parseInt(qc.value) || 6;
+    var qcv = document.getElementById('quickCountValue');
+    if (qcv) qcv.textContent = quickCount;
     var nt = document.getElementById('numpadToggle');
-    if (nt) nt.checked = numpadEnabled;
-  }
+     if (nt) nt.checked = numpadEnabled;
+     var pc = document.getElementById('pieCountSlider');
+     if (pc) pc.value = pieCount;
+     var pcv = document.getElementById('pieCountValue');
+     if (pcv) pcv.textContent = pieCount;
+     var qc = document.getElementById('quickCountSlider');
+     if (qc) qc.value = quickCount;
+     var qcv = document.getElementById('quickCountValue');
+     if (qcv) qcv.textContent = quickCount;
+   }
 
 function renderMenu() {
     var container = document.getElementById('itemsContainer');
@@ -591,6 +609,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var ts = document.getElementById('textSizeSlider');
     var tsv = document.getElementById('textSizeValue');
     if (ts && tsv) ts.addEventListener('input', function() { tsv.textContent = this.value + '%'; textSize = parseInt(this.value); triggerAutoSave(); });
+
+    var pc = document.getElementById('pieCountSlider');
+    var pcv = document.getElementById('pieCountValue');
+    if (pc && pcv) pc.addEventListener('input', function() { pcv.textContent = this.value; pieCount = parseInt(this.value); triggerAutoSave(); });
+
+    var qc = document.getElementById('quickCountSlider');
+    var qcv = document.getElementById('quickCountValue');
+    if (qc && qcv) qc.addEventListener('input', function() { qcv.textContent = this.value; quickCount = parseInt(this.value); triggerAutoSave(); });
 
     var uz = document.getElementById('uiZoomSlider');
     var uzv = document.getElementById('uiZoomValue');
