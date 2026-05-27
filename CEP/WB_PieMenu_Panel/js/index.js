@@ -440,6 +440,7 @@ function addEffectField(card, idx) {
 
     // closure-scoped match name — survives CEF event timing
     var currentMatchName = items[curMenu][curPage][idx].effect || '';
+    var isSelecting = false;
 
     var timer = null;
     input.addEventListener('focus', function() {
@@ -456,6 +457,7 @@ function addEffectField(card, idx) {
     });
 
     input.addEventListener('input', function() {
+        if (isSelecting) return;
         if (timer) clearTimeout(timer);
         currentMatchName = '';
         timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
@@ -497,8 +499,10 @@ function searchAndShow(input, dropdown, query) {
             e.preventDefault();
             var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
+            isSelecting = true;
             input.value = displayName;
             currentMatchName = matchName;
+            isSelecting = false;
             var idx = input.id.replace('itemEffect_', '');
             items[curMenu][curPage][idx].effect = matchName;
             items[curMenu][curPage][idx].effectDisplay = displayName;
