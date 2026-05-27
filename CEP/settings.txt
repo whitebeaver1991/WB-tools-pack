@@ -1,0 +1,12 @@
+item_count=4
+trigger_key=32
+trigger_mod=6
+opacity=160
+numpad_enabled=0
+menu_type=0
+pie_count=4
+quick_count=6
+pie_0_0_n=Item 1
+pie_0_1_n=Item 2
+pie_0_2_n=Item 3
+pie_0_3_n=Item 4

@@ -1,0 +1,15 @@
+BuildOutput/
+Win/x64/
+*.obj
+*.sbr
+*.tlog/
+*.lib
+*.exp
+*.bsc
+*.log
+*.recipe
+*.pdb
+*.res
+*.lastbuildstate
+*.FileListAbsolute.txt
+.DS_Store

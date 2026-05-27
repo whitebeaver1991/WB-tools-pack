@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WB Pie Menu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="CSInterface.js"></script>
+</head>
+<body>
+    <div class="panel">
+        <div class="top-bar">
+            <h2 data-lang="title">WB Menu Suite</h2>
+            <div class="top-bar-right">
+                <button id="langBtn" class="btn-lang" title="Switch Language">中/EN</button>
+                <button id="saveBtn" class="btn-save"><span>&#128426;</span> <span data-lang="save">Save</span></button>
+            </div>
+        </div>
+        <p id="status"></p>
+
+        <div id="zoomContent">
+        <div class="tabs" id="menuTabs">
+            <button class="tab active" data-menu="0" data-lang="pie">Pie</button>
+            <button class="tab" data-menu="1" data-lang="quick">Quick</button>
+            <button class="tab" data-menu="2" data-lang="wheel">Wheel</button>
+        </div>
+
+        <div class="section-global">
+            <div class="section-row">
+                <label data-lang="trigger">Trigger</label>
+                <div class="hotkey-row">
+                    <input id="triggerInput" type="text" readonly placeholder="Record...">
+                    <button id="triggerBtn" class="btn-record" data-lang="record">Record</button>
+                </div>
+            </div>
+            <div class="section-row">
+                <label data-lang="numpad">Numpad</label>
+                <div class="switch-row">
+                    <label class="switch">
+                        <input id="numpadToggle" type="checkbox">
+                        <span class="slider-round"></span>
+                    </label>
+                    <span class="hint" data-lang="numpadHint">F13-F22 (requires pairing)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <div class="collapsible-header" data-target="pieMenuSection">
+                <span class="collapse-icon">&#9660;</span>
+                <span data-lang="pieMenu">Pie Menu</span>
+            </div>
+            <div id="pieMenuSection" class="collapsible-body">
+                <div class="section-row">
+                    <label data-lang="winAlpha">Win Opacity</label>
+                    <div class="slider-row">
+                        <input id="winAlphaSlider" type="range" min="0" max="100" step="5" value="60">
+                        <span id="winAlphaValue" class="slider-value">60</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="bgAlpha">Bg Alpha</label>
+                    <div class="slider-row">
+                        <input id="bgAlphaSlider" type="range" min="0" max="100" step="5" value="60">
+                        <span id="bgAlphaValue" class="slider-value">60</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="bgColor">Bg Color</label>
+                    <div class="slider-row">
+                        <input id="bgColorInput" type="color" value="#2a2a2a" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                        <span id="bgColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#2A2A2A</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="glowColor">Glow Color</label>
+                    <div class="slider-row">
+                        <input id="glowColorInput" type="color" value="#3cb93c" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                        <span id="glowColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#3CB93C</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="glowIntensity">Glow Intensity</label>
+                    <div class="slider-row">
+                        <input id="glowIntensitySlider" type="range" min="0" max="200" step="5" value="100">
+                        <span id="glowIntensityValue" class="slider-value">100</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="imgDist">Icon Dist</label>
+                    <div class="slider-row">
+                        <input id="imgDistSlider" type="range" min="20" max="80" step="5" value="45">
+                        <span id="imgDistValue" class="slider-value">45</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="textDist">Text Dist</label>
+                    <div class="slider-row">
+                        <input id="textDistSlider" type="range" min="30" max="90" step="5" value="85">
+                        <span id="textDistValue" class="slider-value">85</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="textSize">Text Size</label>
+                    <div class="slider-row">
+                        <input id="textSizeSlider" type="range" min="50" max="150" step="5" value="100">
+                        <span id="textSizeValue" class="slider-value">100%</span>
+                    </div>
+                </div>
+                <div class="section-row">
+                    <label data-lang="menuScale">Menu Scale</label>
+                    <div class="slider-row">
+                        <input id="menuScaleSlider" type="range" min="50" max="150" step="5" value="100">
+                        <span id="menuScaleValue" class="slider-value">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <div class="collapsible-header" data-target="cepSection">
+                <span class="collapse-icon">&#9660;</span>
+                <span data-lang="cep">CEP Panel</span>
+            </div>
+            <div id="cepSection" class="collapsible-body">
+                <div class="section-row">
+                    <label data-lang="uiZoom">UI Zoom</label>
+                    <div class="slider-row">
+                        <input id="uiZoomSlider" type="range" min="100" max="200" step="5" value="100">
+                        <span id="uiZoomValue" class="slider-value">100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <div class="collapsible-header" data-target="aboutSection">
+                <span class="collapse-icon">&#9660;</span>
+                <span data-lang="about">About</span>
+            </div>
+            <div id="aboutSection" class="collapsible-body" style="padding:8px;font-size:11px;color:#888;line-height:1.6;">
+                 <div><b>WB Menu Suite</b> &mdash; Version 0.0.1</div>
+                 <div>vibe coding作者: whitebeaver</div>
+                 <div>本项目完全免费，由Trae与Deepseek V4.0 Flash版本生成，完全AI，绝无人工要素</div>
+             </div>
+        </div>
+
+        <div class="section" id="menuSection">
+            <div class="menu-header" id="menuHeader"></div>
+            <div id="itemsContainer"></div>
+        </div>
+        </div>
+    </div>
+
+    <script src="js/index.js"></script>
+</body>
+</html>
