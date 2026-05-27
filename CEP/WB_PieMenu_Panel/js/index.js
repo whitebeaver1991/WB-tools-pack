@@ -112,6 +112,7 @@ function parseSettings(data) {
                 var pref = labelMap[m].toLowerCase() + '_' + p + '_' + i;
                 if (parsed[pref + '_n']) items[m][p][i].name = parsed[pref + '_n'];
                 if (parsed[pref + '_e']) items[m][p][i].effect = parsed[pref + '_e'];
+                if (parsed[pref + '_en']) items[m][p][i].effectDisplay = parsed[pref + '_en'];
                 if (parsed[pref + '_img']) items[m][p][i].image = parsed[pref + '_img'];
                 if (parsed[pref + '_sz']) items[m][p][i].size = parseInt(parsed[pref + '_sz']) || 80;
             }
@@ -142,6 +143,7 @@ function saveSettings() {
                 var pref = labelMap[m].toLowerCase() + '_' + p + '_' + i;
                 if (items[m][p][i].name) lines.push(pref + '_n=' + items[m][p][i].name);
                 if (items[m][p][i].effect) lines.push(pref + '_e=' + items[m][p][i].effect);
+                if (items[m][p][i].effectDisplay) lines.push(pref + '_en=' + items[m][p][i].effectDisplay);
                 if (items[m][p][i].image) lines.push(pref + '_img=' + items[m][p][i].image);
                 if (items[m][p][i].size && items[m][p][i].size !== 80) lines.push(pref + '_sz=' + items[m][p][i].size);
             }
@@ -208,7 +210,10 @@ function collectFromUI() {
         var el = document.getElementById('itemName_' + i);
         if (el) items[curMenu][curPage][i].name = el.value;
         el = document.getElementById('itemEffect_' + i);
-        if (el) items[curMenu][curPage][i].effect = el.dataset.matchName || el.value;
+        if (el) {
+            items[curMenu][curPage][i].effect = el.dataset.matchName || el.value;
+            items[curMenu][curPage][i].effectDisplay = el.value;
+        }
         el = document.getElementById('itemImage_' + i);
         if (el) items[curMenu][curPage][i].image = el.value;
         el = document.getElementById('itemSize_' + i);
@@ -422,7 +427,7 @@ function addEffectField(card, idx) {
     var input = document.createElement('input');
     input.type = 'text'; input.id = 'itemEffect_' + idx;
     input.autocomplete = 'off';
-    input.value = items[curMenu][curPage][idx].effect || '';
+    input.value = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
     input.style.flex = '1';
     input.addEventListener('input', triggerAutoSave);
     row.appendChild(input);
@@ -482,10 +487,13 @@ function searchAndShow(input, dropdown, query) {
         item.appendChild(matchSpan);
         item.addEventListener('mousedown', function(e) {
             e.preventDefault();
+            var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
-            input.value = this.querySelector('.effect-name').textContent;
+            input.value = displayName;
             input.dataset.matchName = matchName;
-            items[curMenu][curPage][input.id.replace('itemEffect_', '')].effect = matchName;
+            var idx = input.id.replace('itemEffect_', '');
+            items[curMenu][curPage][idx].effect = matchName;
+            items[curMenu][curPage][idx].effectDisplay = displayName;
             dropdown.style.display = 'none';
             triggerAutoSave();
         });
