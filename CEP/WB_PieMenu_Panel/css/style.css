@@ -52,6 +52,10 @@ body {
     margin-bottom: 8px;
     padding-bottom: 6px;
     border-bottom: 1px solid #333;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #1e1e1e;
 }
 
 .top-bar h2 {

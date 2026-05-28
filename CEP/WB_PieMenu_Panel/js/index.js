@@ -1177,7 +1177,10 @@ function addEffectField(card, idx) {
         items[curMenu][curPage][i].effect = '';
         items[curMenu][curPage][i].effectDisplay = '';
         renderMenu();
-        if (zc) setTimeout(function() { zc.scrollTop = savedScroll; }, 0);
+        if (zc) {
+            zc.scrollTop = savedScroll;
+            setTimeout(function() { zc.scrollTop = savedScroll; }, 50);
+        }
         triggerAutoSave();
     });
     wrap.appendChild(clearBtn);
