@@ -467,11 +467,12 @@ function addEffectField(card, idx) {
     clearBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var i = parseInt(display.dataset.idx);
+        var zc = document.getElementById('zoomContent');
+        var savedScroll = zc ? zc.scrollTop : 0;
         items[curMenu][curPage][i].effect = '';
         items[curMenu][curPage][i].effectDisplay = '';
-        var savedScroll = saveScrollPos();
         renderMenu();
-        restoreScrollPos(savedScroll);
+        if (zc) setTimeout(function() { zc.scrollTop = savedScroll; }, 0);
         triggerAutoSave();
     });
     wrap.appendChild(clearBtn);
@@ -575,18 +576,16 @@ function selectEffect(displayName, matchName) {
     if (idx < 0) { dbg('  ABORT: no target idx'); return; }
     items[curMenu][curPage][idx].effect = matchName;
     items[curMenu][curPage][idx].effectDisplay = displayName;
-    dbg('  items[' + curMenu + '][' + curPage + '][' + idx + '] set: effect="' + matchName + '" effectDisplay="' + displayName + '"');
+    dbg('  items[' + curMenu + '][' + curPage + '][' + idx + '] set');
     closeEffectSearch();
-    dbg('  calling triggerAutoSave...');
+    // Direct DOM update — no renderMenu, no setTimeout
+    var el = document.getElementById('itemEffect_' + idx);
+    if (el) {
+        el.textContent = displayName;
+        el.classList.remove('empty');
+        dbg('  dom updated: text="' + displayName + '"');
+    }
     triggerAutoSave();
-    // Delay renderMenu so CEF fully processes overlay close first
-    dbg('  scheduling deferred renderMenu...');
-    var savedScroll = saveScrollPos();
-    setTimeout(function() {
-        renderMenu();
-        restoreScrollPos(savedScroll);
-        dbg('  deferred renderMenu done');
-    }, 50);
 }
 
 function saveScrollPos() {
