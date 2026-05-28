@@ -891,8 +891,6 @@ function saveSettings() {
     }
     var l = LANG[language] || LANG[0];
     evalScript('writeSettings(' + JSON.stringify(lines.join('\n')) + ')').then(function(r) {
-        // Signal AEGP to reload settings via separate flag file (no file race)
-        evalScript('writeDirtyFlag()');
         var s = document.getElementById('status');
         if (r === 'OK') { s.className = 'success'; s.textContent = l.saveOk; setTimeout(function(){s.textContent='';},3000); }
         else { s.className = 'error'; s.textContent = l.saveFail; }

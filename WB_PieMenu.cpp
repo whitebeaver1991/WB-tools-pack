@@ -1263,30 +1263,29 @@ static A_Err CommandHook(AEGP_GlobalRefcon, AEGP_CommandRefcon, AEGP_Command cmd
 
 static void ClearPendingInFile(void)
 {
-    // Only clean up save_eff/apply_eff pending lines — NEVER rewrite settings_dirty path
+    // Only clean up save_eff/apply_eff pending lines — skip if nothing to remove
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "r");
     if (!f) return;
-    char lines[256][1024]; int n = 0;
+    char lines[256][1024]; int n = 0, skipped = 0;
     char buf[1024];
     while (fgets(buf, sizeof(buf), f) && n < 256) {
         strncpy_s(lines[n], 1024, buf, _TRUNCATE);
+        char k[64] = {0};
+        if (sscanf_s(lines[n], " %63[^=]", k, 64) >= 1) {
+            if (strcmp(k, "save_eff_pending") == 0 ||
+                strcmp(k, "save_eff_path") == 0 ||
+                strcmp(k, "apply_eff_pending") == 0 ||
+                strcmp(k, "apply_eff_path") == 0 ||
+                strcmp(k, "save_eff_result") == 0) { skipped++; continue; }
+        }
         n++;
     }
     fclose(f);
+    if (!skipped) return;
     f = NULL; fopen_s(&f, p, "w");
     if (!f) return;
-    for (int i = 0; i < n; i++) {
-        char k[64] = {0};
-        if (sscanf_s(lines[i], " %63[^=]", k, 64) >= 1) {
-            if (strcmp(k, "save_eff_pending") == 0) continue;
-            if (strcmp(k, "save_eff_path") == 0) continue;
-            if (strcmp(k, "apply_eff_pending") == 0) continue;
-            if (strcmp(k, "apply_eff_path") == 0) continue;
-            if (strcmp(k, "save_eff_result") == 0) continue;
-        }
-        fputs(lines[i], f);
-    }
+    for (int i = 0; i < n; i++) fputs(lines[i], f);
     fclose(f);
 }
 

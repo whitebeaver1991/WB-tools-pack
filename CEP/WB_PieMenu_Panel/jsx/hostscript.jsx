@@ -34,6 +34,10 @@ function writeSettings(data) {
     f.open("w");
     f.write(data);
     f.close();
+    var df = new File(SETTINGS_DIR + "/settings.dirty");
+    df.open("w");
+    df.write("1");
+    df.close();
     return "OK";
 }
 
@@ -65,13 +69,4 @@ function browseFilePNG() {
     var f = File.openDialog("选择PNG图片", "PNG:*.png;*.bmp;*.jpg");
     if (f) return f.fsName;
     return "";
-}
-
-function writeDirtyFlag() {
-    ensureSettingsDir();
-    var f = new File(SETTINGS_DIR + "/settings.dirty");
-    f.open("w");
-    f.write("1");
-    f.close();
-    return "OK";
 }
