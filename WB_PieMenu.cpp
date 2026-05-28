@@ -59,6 +59,7 @@ static int   g_winAlpha = 60;      // 0-100, window opacity
 static int   g_bgAlpha = 60;       // 0-100, sector fill opacity only
 static int   g_bgColor = 0x2A2A2A;
 static int   g_glowColor = 0x3CB93C;
+static int   g_pageColor = 0x78787D;
 static int   g_glowIntensity = 100;
 static int   g_imgDist = 45;       // 20-80%, icon distance from center
 static int   g_textDist = 85;      // 30-90%, text distance from center
@@ -325,6 +326,7 @@ static void SetVal(const char *key, const char *val)
     else if (strcmp(key, "bg_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_bgColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
     else if (strcmp(key, "glow_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_glowColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
     else if (strcmp(key, "glow_intensity") == 0) { int n = atoi(val); if (n >= 0 && n <= 200) g_glowIntensity = n; return; }
+    else if (strcmp(key, "page_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_pageColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
     else if (strcmp(key, "img_dist") == 0) { int n = atoi(val); if (n >= 20 && n <= 80) g_imgDist = n; return; }
     else if (strcmp(key, "text_dist") == 0) { int n = atoi(val); if (n >= 30 && n <= 90) g_textDist = n; return; }
     else if (strcmp(key, "text_size") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_textSize = n; return; }
@@ -896,7 +898,7 @@ static void DrawPie(HDC hdc)
         TextOutA(dc, tx, ty - fntSz/2 - 2, g_names[g_menuType][g_curPage][i], (int)strlen(g_names[g_menuType][g_curPage][i]));
     }
     char pageBuf[16]; _snprintf_s(pageBuf, 16, _TRUNCATE, "%d/%d", g_curPage + 1, g_totalPages);
-    SetTextColor(dc, RGB(120,120,125)); SetTextAlign(dc, TA_CENTER | TA_TOP);
+    SetTextColor(dc, g_pageColor); SetTextAlign(dc, TA_CENTER | TA_TOP);
     TextOutA(dc, ct, ct + 10, pageBuf, (int)strlen(pageBuf));
 
     // Ring + arc
@@ -952,7 +954,7 @@ static void DrawQuick(HDC hdc)
         TextOutA(dc, x + 8, y + 8, g_names[g_menuType][g_curPage][i], (int)strlen(g_names[g_menuType][g_curPage][i]));
     }
     char pageBuf[16]; _snprintf_s(pageBuf, 16, _TRUNCATE, "%d/%d", g_curPage + 1, g_totalPages);
-    SetTextColor(dc, RGB(120,120,125)); SetTextAlign(dc, TA_CENTER | TA_TOP);
+    SetTextColor(dc, g_pageColor); SetTextAlign(dc, TA_CENTER | TA_TOP);
     TextOutA(dc, ws/2, startY + totalH + 12, pageBuf, (int)strlen(pageBuf));
 
     SelectObject(dc, of); DeleteObject(font);
@@ -1042,7 +1044,7 @@ static void DrawWheel(HDC hdc)
     Ellipse(dc, ct - 15, ct - 15, ct + 15, ct + 15);
     DeleteObject(cp);
 
-    SetTextColor(dc, RGB(150,150,155));
+    SetTextColor(dc, g_pageColor);
     SetTextAlign(dc, TA_CENTER | TA_TOP);
     char buf[16]; _snprintf_s(buf, 16, _TRUNCATE, "%d/%d", g_curPage + 1, g_totalPages);
     TextOutA(dc, ct, ct + 20, buf, (int)strlen(buf));

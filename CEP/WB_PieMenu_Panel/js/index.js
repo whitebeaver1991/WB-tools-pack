@@ -7,6 +7,7 @@ var pieCount = 4, quickCount = 6;
 var triggerKey = 32, triggerMod = 6, winAlpha = 60;
 var prevPageKey = 90, nextPageKey = 88; // Z, X
 var bgAlpha = 60, bgColor = '2a2a2a', glowColor = '3cb93c', glowIntensity = 100;
+var pageColor = '78787d';
 var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
 var g_effectsCache = null;
@@ -725,15 +726,20 @@ function dbg(msg) {
     var time = ('0'+ts.getHours()).slice(-2) + ':' + ('0'+ts.getMinutes()).slice(-2) + ':' + ('0'+ts.getSeconds()).slice(-2);
     var line = time + ' ' + msg;
     g_logLines.push(line);
-    var wrap = document.getElementById('debugLogWrap');
     var el = document.getElementById('debugLog');
     if (el) {
         var t = document.createElement('div');
         t.textContent = line;
         el.appendChild(t);
         el.scrollTop = el.scrollHeight;
+        // Auto-expand log body
+        var body = document.getElementById('debugLogBody');
+        var hdr = document.querySelector('[data-target="debugLogBody"]');
+        if (body && body.classList.contains('collapsed')) {
+            body.classList.remove('collapsed');
+            if (hdr) hdr.classList.remove('collapsed');
+        }
     }
-    if (wrap && wrap.style.display === 'none') wrap.style.display = 'block';
 }
 
 var LANG = [
@@ -815,6 +821,7 @@ function parseSettings(data) {
     if (parsed['bg_color']) bgColor = parsed['bg_color'];
     if (parsed['glow_color']) glowColor = parsed['glow_color'];
     if (parsed['glow_intensity']) glowIntensity = parseInt(parsed['glow_intensity']) || 100;
+    if (parsed['page_color']) pageColor = parsed['page_color'];
     if (parsed['img_dist']) imgDist = parseInt(parsed['img_dist']) || 45;
     if (parsed['text_dist']) textDist = parseInt(parsed['text_dist']) || 85;
     if (parsed['text_size']) textSize = parseInt(parsed['text_size']) || 100;
@@ -861,6 +868,7 @@ function saveSettings() {
                  'prev_page_key=' + prevPageKey, 'next_page_key=' + nextPageKey,
                  'win_alpha=' + winAlpha, 'bg_alpha=' + bgAlpha, 'bg_color=' + bgColor,
                  'glow_color=' + glowColor, 'glow_intensity=' + glowIntensity,
+                 'page_color=' + pageColor,
                  'img_dist=' + imgDist, 'text_dist=' + textDist, 'text_size=' + textSize,
                   'ui_zoom=' + uiZoom, 'menu_scale=' + menuScale, 'language=' + language,
                  'numpad_enabled=' + (numpadEnabled?'1':'0'),
@@ -917,6 +925,10 @@ function collectFromUI() {
     if (gc) glowColor = gc.value.replace('#', '').toLowerCase();
     var gct = document.getElementById('glowColorText');
     if (gct) gct.textContent = '#' + glowColor.toUpperCase();
+    var pgc = document.getElementById('pageColorInput');
+    if (pgc) pageColor = pgc.value.replace('#', '').toLowerCase();
+    var pgct = document.getElementById('pageColorText');
+    if (pgct) pgct.textContent = '#' + pageColor.toUpperCase();
     var gi = document.getElementById('glowIntensitySlider');
     if (gi) glowIntensity = parseInt(gi.value) || 100;
     var giv = document.getElementById('glowIntensityValue');
@@ -1022,6 +1034,10 @@ function updateGlobals() {
     if (gc) gc.value = '#' + glowColor;
     var gct = document.getElementById('glowColorText');
     if (gct) gct.textContent = '#' + glowColor.toUpperCase();
+    var pgc = document.getElementById('pageColorInput');
+    if (pgc) pgc.value = '#' + pageColor;
+    var pgct = document.getElementById('pageColorText');
+    if (pgct) pgct.textContent = '#' + pageColor.toUpperCase();
     var gi = document.getElementById('glowIntensitySlider');
     if (gi) gi.value = glowIntensity;
     var giv = document.getElementById('glowIntensityValue');
@@ -1428,6 +1444,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var gc = document.getElementById('glowColorInput');
     if (gc) gc.addEventListener('input', function() {
         document.getElementById('glowColorText').textContent = this.value.toUpperCase();
+        triggerAutoSave();
+    });
+
+    var pgc = document.getElementById('pageColorInput');
+    if (pgc) pgc.addEventListener('input', function() {
+        document.getElementById('pageColorText').textContent = this.value.toUpperCase();
         triggerAutoSave();
     });
 

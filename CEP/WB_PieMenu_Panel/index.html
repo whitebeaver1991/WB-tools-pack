@@ -101,6 +101,13 @@
                     </div>
                 </div>
                 <div class="section-row">
+                    <label>Page Color</label>
+                    <div class="slider-row">
+                        <input id="pageColorInput" type="color" value="#78787d" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                        <span id="pageColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#78787D</span>
+                    </div>
+                </div>
+                <div class="section-row">
                     <label data-lang="imgDist">Icon Dist</label>
                     <div class="slider-row">
                         <input id="imgDistSlider" type="range" min="20" max="80" step="5" value="45">
@@ -204,12 +211,17 @@
             </div>
         </div>
 
-        <div id="debugLogWrap" style="margin-top:8px;border:1px solid #333;border-radius:3px;display:none;">
+        <div id="debugLogWrap" style="margin-top:8px;border:1px solid #333;border-radius:3px;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 6px;background:#1a1a1a;border-bottom:1px solid #333;">
-                <span style="font-size:10px;color:#666;">Debug Log</span>
+                <span class="collapsible-header" data-target="debugLogBody" style="cursor:pointer;font-size:10px;color:#666;user-select:none;">
+                    <span class="collapse-icon" style="display:inline-block;transition:transform .15s;">&#9660;</span>
+                    Debug Log
+                </span>
                 <button id="copyLogBtn" style="font-size:10px;padding:1px 6px;background:#333;border:1px solid #555;border-radius:2px;color:#aaa;cursor:pointer;">📋 Copy</button>
             </div>
-            <div id="debugLog" style="padding:4px 6px;font-size:10px;font-family:Consolas;color:#888;max-height:150px;overflow-y:auto;user-select:text;-webkit-user-select:text;"></div>
+            <div id="debugLogBody" class="collapsible-body collapsed">
+                <div id="debugLog" style="padding:4px 6px;font-size:10px;font-family:Consolas;color:#888;max-height:150px;overflow-y:auto;user-select:text;-webkit-user-select:text;"></div>
+            </div>
         </div>
         </div>
     </div>
