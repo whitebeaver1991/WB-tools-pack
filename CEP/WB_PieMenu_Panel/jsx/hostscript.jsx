@@ -66,3 +66,12 @@ function browseFilePNG() {
     if (f) return f.fsName;
     return "";
 }
+
+function writeDirtyFlag() {
+    ensureSettingsDir();
+    var f = new File(SETTINGS_DIR + "/settings.dirty");
+    f.open("w");
+    f.write("1");
+    f.close();
+    return "OK";
+}
