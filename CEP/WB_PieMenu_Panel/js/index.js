@@ -1178,7 +1178,8 @@ function addEffectField(card, idx) {
         var i = parseInt(display.dataset.idx);
         items[curMenu][curPage][i].effect = '';
         items[curMenu][curPage][i].effectDisplay = '';
-        renderMenu();
+        display.textContent = '';
+        display.classList.add('empty');
         saveSettings();
     });
     wrap.appendChild(clearBtn);
