@@ -494,9 +494,11 @@ function openEffectSearch(idx) {
     var input = document.getElementById('effectSearchInput');
     var overlay = document.getElementById('effectSearchOverlay');
     input.value = items[curMenu][curPage][idx].effectDisplay || '';
-    updateEffectResults(input.value);
     overlay.style.display = 'flex';
     setTimeout(function() { input.focus(); input.select(); }, 50);
+    loadEffectsCache().then(function() {
+        updateEffectResults(input.value);
+    });
 }
 
 function closeEffectSearch() {
@@ -511,13 +513,16 @@ function selectEffect(displayName, matchName) {
     items[curMenu][curPage][idx].effectDisplay = displayName;
     closeEffectSearch();
     triggerAutoSave();
-    setTimeout(function() {
-        var display = document.getElementById('itemEffect_' + idx);
-        if (display) {
-            display.textContent = displayName;
-            display.classList.remove('empty');
-        }
-    }, 0);
+    var old = document.getElementById('itemEffect_' + idx);
+    if (old) {
+        var el = document.createElement('div');
+        el.className = 'effect-display';
+        el.id = 'itemEffect_' + idx;
+        el.textContent = displayName;
+        el.dataset.idx = idx;
+        el.addEventListener('click', function() { openEffectSearch(parseInt(this.dataset.idx)); });
+        old.parentNode.replaceChild(el, old);
+    }
 }
 
 function addSizeSlider(card, idx) {
