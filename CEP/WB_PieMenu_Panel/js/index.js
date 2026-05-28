@@ -443,10 +443,12 @@ var g_effectSearchTargetIdx = -1;
 function addEffectField(card, idx) {
     var row = document.createElement('div');
     row.className = 'field-row';
-    var lbl = document.createElement('label');
     var l = LANG[language] || LANG[0];
+    var lbl = document.createElement('label');
     lbl.textContent = l.sEffect;
     row.appendChild(lbl);
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex:1;gap:3px;';
     var display = document.createElement('div');
     display.className = 'effect-display';
     display.id = 'itemEffect_' + idx;
@@ -457,8 +459,22 @@ function addEffectField(card, idx) {
     display.addEventListener('click', function() {
         openEffectSearch(parseInt(this.dataset.idx));
     });
+    wrap.appendChild(display);
+    var clearBtn = document.createElement('button');
+    clearBtn.textContent = '✕';
+    clearBtn.title = 'Clear effect';
+    clearBtn.style.cssText = 'background:#3a3a3a;border:1px solid #555;border-radius:3px;color:#888;cursor:pointer;padding:0 6px;font-size:10px;line-height:22px;';
+    clearBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var i = parseInt(display.dataset.idx);
+        items[curMenu][curPage][i].effect = '';
+        items[curMenu][curPage][i].effectDisplay = '';
+        renderMenu();
+        triggerAutoSave();
+    });
+    wrap.appendChild(clearBtn);
     dbg('addEffectField idx=' + idx + ' text="' + txt + '" id=itemEffect_' + idx);
-    row.appendChild(display);
+    row.appendChild(wrap);
     card.appendChild(row);
 }
 
