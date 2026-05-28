@@ -246,6 +246,20 @@ h2 {
     cursor: pointer;
 }
 
+.field-select {
+    background: #222;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+    min-width: 64px;
+}
+.field-select:hover { border-color: #3a7bd5; }
+.field-select:focus { border-color: #3a7bd5; }
+
 .slider-value {
     min-width: 28px;
     text-align: center;

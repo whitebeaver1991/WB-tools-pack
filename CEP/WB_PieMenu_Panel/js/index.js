@@ -1043,25 +1043,17 @@ function updateGlobals() {
     if (ms) ms.value = menuScale;
     var msv = document.getElementById('menuScaleValue');
     if (msv) msv.textContent = menuScale + '%';
-    var pc = document.getElementById('pieCountSlider');
+    var pc = document.getElementById('pieCountSelect');
     if (pc) pieCount = parseInt(pc.value) || 4;
-    var pcv = document.getElementById('pieCountValue');
-    if (pcv) pcv.textContent = pieCount;
-    var qc = document.getElementById('quickCountSlider');
+    var qc = document.getElementById('quickCountSelect');
     if (qc) quickCount = parseInt(qc.value) || 6;
-    var qcv = document.getElementById('quickCountValue');
-    if (qcv) qcv.textContent = quickCount;
     var nt = document.getElementById('numpadToggle');
-     if (nt) nt.checked = numpadEnabled;
-     var pc = document.getElementById('pieCountSlider');
-     if (pc) pc.value = pieCount;
-     var pcv = document.getElementById('pieCountValue');
-     if (pcv) pcv.textContent = pieCount;
-     var qc = document.getElementById('quickCountSlider');
-     if (qc) qc.value = quickCount;
-     var qcv = document.getElementById('quickCountValue');
-     if (qcv) qcv.textContent = quickCount;
-   }
+    if (nt) nt.checked = numpadEnabled;
+    var pc = document.getElementById('pieCountSelect');
+    if (pc) pc.value = '' + pieCount;
+    var qc = document.getElementById('quickCountSelect');
+    if (qc) qc.value = '' + quickCount;
+  }
 
 function renderMenu() {
     dbg('renderMenu start: curMenu=' + curMenu + ' curPage=' + curPage + ' pieCount=' + pieCount + ' quickCount=' + quickCount);
@@ -1105,7 +1097,13 @@ function renderMenu() {
     }
     if (zc) {
         zc.scrollTop = savedScroll;
-        setTimeout(function() { if (zc) zc.scrollTop = savedScroll; }, 50);
+        var tries = 0;
+        (function restore() {
+            if (zc.scrollTop === savedScroll) return;
+            if (++tries > 15) return;
+            zc.scrollTop = savedScroll;
+            setTimeout(restore, 80);
+        })();
     }
 }
 
@@ -1417,13 +1415,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var tsv = document.getElementById('textSizeValue');
     if (ts && tsv) ts.addEventListener('input', function() { tsv.textContent = this.value + '%'; textSize = parseInt(this.value); triggerAutoSave(); });
 
-    var pc = document.getElementById('pieCountSlider');
-    var pcv = document.getElementById('pieCountValue');
-    if (pc && pcv) pc.addEventListener('input', function() { pcv.textContent = this.value; pieCount = parseInt(this.value); triggerAutoSave(); });
+    var pc = document.getElementById('pieCountSelect');
+    if (pc) pc.addEventListener('change', function() { pieCount = parseInt(this.value); renderMenu(); saveSettings(); });
 
-    var qc = document.getElementById('quickCountSlider');
-    var qcv = document.getElementById('quickCountValue');
-    if (qc && qcv) qc.addEventListener('input', function() { qcv.textContent = this.value; quickCount = parseInt(this.value); triggerAutoSave(); });
+    var qc = document.getElementById('quickCountSelect');
+    if (qc) qc.addEventListener('change', function() { quickCount = parseInt(this.value); renderMenu(); saveSettings(); });
 
     var uz = document.getElementById('uiZoomSlider');
     var uzv = document.getElementById('uiZoomValue');
