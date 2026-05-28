@@ -1257,12 +1257,13 @@ static A_Err CommandHook(AEGP_GlobalRefcon, AEGP_CommandRefcon, AEGP_Command cmd
 
 static void ClearPendingInFile(void)
 {
+    // Only clean up save_eff/apply_eff pending lines — NEVER rewrite settings_dirty path
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "r");
     if (!f) return;
-    char lines[64][1024]; int n = 0;
+    char lines[256][1024]; int n = 0;
     char buf[1024];
-    while (fgets(buf, sizeof(buf), f) && n < 64) {
+    while (fgets(buf, sizeof(buf), f) && n < 256) {
         strncpy_s(lines[n], 1024, buf, _TRUNCATE);
         n++;
     }
@@ -1277,7 +1278,6 @@ static void ClearPendingInFile(void)
             if (strcmp(k, "apply_eff_pending") == 0) continue;
             if (strcmp(k, "apply_eff_path") == 0) continue;
             if (strcmp(k, "save_eff_result") == 0) continue;
-            if (strcmp(k, "settings_dirty") == 0) continue;
         }
         fputs(lines[i], f);
     }
@@ -1288,7 +1288,8 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
 {
     ApplyPending();
     bool settingsDirty = false;
-    // Read pending ops, trigger settings, and settings_dirty flag from file
+    bool hadPending = false;
+    // Read pending ops and settings_dirty flag from file
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "r");
     if (f) {
@@ -1299,9 +1300,9 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
         while (fgets(l, sizeof(l), f)) {
             char k[64] = {0}, v[960] = {0};
             if (sscanf_s(l, " %63[^=]=%959[^\r\n]", k, 64, v, 960) >= 1) {
-                if (strcmp(k, "save_eff_pending") == 0) g_saveEffPending = (atoi(v) != 0);
+                if (strcmp(k, "save_eff_pending") == 0) { g_saveEffPending = (atoi(v) != 0); hadPending = true; }
                 else if (strcmp(k, "save_eff_path") == 0) strncpy_s(g_saveEffPath, sizeof(g_saveEffPath), v, _TRUNCATE);
-                else if (strcmp(k, "apply_eff_pending") == 0) g_applyEffPending = (atoi(v) != 0);
+                else if (strcmp(k, "apply_eff_pending") == 0) { g_applyEffPending = (atoi(v) != 0); hadPending = true; }
                 else if (strcmp(k, "apply_eff_path") == 0) strncpy_s(g_applyEffPath, sizeof(g_applyEffPath), v, _TRUNCATE);
                 else if (strcmp(k, "trigger_disabled") == 0) { triggerDisabled = (atoi(v) != 0); }
                 else if (strcmp(k, "trigger_key") == 0) { newKey = atoi(v); triggerChanged = true; }
@@ -1310,11 +1311,10 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
             }
         }
         fclose(f);
-        // Full reload when CEP panel saves settings
+        // Full reload when CEP panel saves settings — read-only, never rewrite the file
         if (settingsDirty) {
             LoadSettings();
             RegisterTriggerHotkey();
-            ClearPendingInFile();
         } else {
             if (triggerDisabled || (triggerChanged && (newKey == 0 || newMod == 0))) {
                 if (g_rawWnd) UnregisterHotKey(g_rawWnd, 0);
@@ -1333,7 +1333,8 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
         g_applyEffPending = false;
         DoApplyEff();
     }
-    if (!settingsDirty) ClearPendingInFile();
+    // Only clean up save_eff/apply_eff pending lines in file, never touch settings lines
+    if (hadPending) ClearPendingInFile();
     return A_Err_NONE;
 }
 
