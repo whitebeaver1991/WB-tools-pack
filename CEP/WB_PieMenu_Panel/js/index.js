@@ -469,7 +469,9 @@ function addEffectField(card, idx) {
         var i = parseInt(display.dataset.idx);
         items[curMenu][curPage][i].effect = '';
         items[curMenu][curPage][i].effectDisplay = '';
+        var savedScroll = saveScrollPos();
         renderMenu();
+        restoreScrollPos(savedScroll);
         triggerAutoSave();
     });
     wrap.appendChild(clearBtn);
@@ -577,9 +579,24 @@ function selectEffect(displayName, matchName) {
     closeEffectSearch();
     dbg('  calling triggerAutoSave...');
     triggerAutoSave();
-    dbg('  calling renderMenu...');
-    renderMenu();
-    dbg('  done');
+    // Delay renderMenu so CEF fully processes overlay close first
+    dbg('  scheduling deferred renderMenu...');
+    var savedScroll = saveScrollPos();
+    setTimeout(function() {
+        renderMenu();
+        restoreScrollPos(savedScroll);
+        dbg('  deferred renderMenu done');
+    }, 50);
+}
+
+function saveScrollPos() {
+    var zc = document.getElementById('zoomContent');
+    return zc ? zc.scrollTop : 0;
+}
+
+function restoreScrollPos(pos) {
+    var zc = document.getElementById('zoomContent');
+    if (zc) { zc.scrollTop = pos; }
 }
 
 function addSizeSlider(card, idx) {
