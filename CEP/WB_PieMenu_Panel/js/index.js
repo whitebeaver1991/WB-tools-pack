@@ -1356,6 +1356,20 @@ function startRecording(inputEl, btnEl, callback) {
     inputEl.value = '...';
     inputEl.className = 'recording';
     btnEl.textContent = '...';
+    // Disable trigger hotkey to prevent interference during recording
+    evalScript('readSettings()').then(function(data) {
+        if (data) {
+            var lines = [];
+            data.split('\n').forEach(function(l) {
+                if (l.indexOf('trigger_disabled=') < 0 && l.indexOf('trigger_key=') < 0 && l.indexOf('trigger_mod=') < 0)
+                    lines.push(l);
+            });
+            lines.push('trigger_disabled=1');
+            lines.push('trigger_key=0');
+            lines.push('trigger_mod=0');
+            evalScript('writeSettings(' + JSON.stringify(lines.join('\n')) + ')');
+        }
+    });
     function onKeyDown(e) {
         e.preventDefault();
         var key = e.keyCode, mod = 0;
@@ -1369,6 +1383,7 @@ function startRecording(inputEl, btnEl, callback) {
         document.removeEventListener('keydown', onKeyDown, true);
         callback(key, mod);
         inputEl.value = formatKeys(key, mod);
+        saveSettings();
     }
     document.addEventListener('keydown', onKeyDown, true);
 }

@@ -1281,11 +1281,14 @@ static void ClearPendingInFile(void)
 static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
 {
     ApplyPending();
-    // Read pending ops from file (JS writes them)
+    // Read pending ops and trigger settings from file
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "r");
     if (f) {
         char l[1024];
+        int newKey = g_triggerKey, newMod = g_triggerMod;
+        bool triggerChanged = false;
+        bool triggerDisabled = false;
         while (fgets(l, sizeof(l), f)) {
             char k[64] = {0}, v[960] = {0};
             if (sscanf_s(l, " %63[^=]=%959[^\r\n]", k, 64, v, 960) >= 1) {
@@ -1293,9 +1296,19 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
                 else if (strcmp(k, "save_eff_path") == 0) strncpy_s(g_saveEffPath, sizeof(g_saveEffPath), v, _TRUNCATE);
                 else if (strcmp(k, "apply_eff_pending") == 0) g_applyEffPending = (atoi(v) != 0);
                 else if (strcmp(k, "apply_eff_path") == 0) strncpy_s(g_applyEffPath, sizeof(g_applyEffPath), v, _TRUNCATE);
+                else if (strcmp(k, "trigger_disabled") == 0) { triggerDisabled = (atoi(v) != 0); }
+                else if (strcmp(k, "trigger_key") == 0) { newKey = atoi(v); triggerChanged = true; }
+                else if (strcmp(k, "trigger_mod") == 0) { newMod = atoi(v); triggerChanged = true; }
             }
         }
         fclose(f);
+        if (triggerDisabled || (triggerChanged && (newKey == 0 || newMod == 0))) {
+            if (g_rawWnd) UnregisterHotKey(g_rawWnd, 0);
+            g_triggerKey = 0; g_triggerMod = 0;
+        } else if (triggerChanged && newKey && newMod) {
+            g_triggerKey = newKey; g_triggerMod = newMod;
+            RegisterTriggerHotkey();
+        }
     }
     if (g_saveEffPending && g_saveEffPath[0]) {
         g_saveEffPending = false;
