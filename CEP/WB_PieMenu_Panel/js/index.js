@@ -10,6 +10,7 @@ var bgAlpha = 60, bgColor = '2a2a2a', glowColor = '3cb93c', glowIntensity = 100;
 var pageColor = '78787d';
 var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
+var g_settingsVersion = 0;
 var g_effectsCache = null;
 var g_nameMap = null;
 g_nameMap = {
@@ -864,7 +865,9 @@ function loadSettings() {
 
 function saveSettings() {
     collectFromUI();
-    var lines = ['trigger_key=' + triggerKey, 'trigger_mod=' + triggerMod,
+    g_settingsVersion++;
+    var lines = ['settings_version=' + g_settingsVersion,
+                 'trigger_key=' + triggerKey, 'trigger_mod=' + triggerMod,
                  'prev_page_key=' + prevPageKey, 'next_page_key=' + nextPageKey,
                  'win_alpha=' + winAlpha, 'bg_alpha=' + bgAlpha, 'bg_color=' + bgColor,
                  'glow_color=' + glowColor, 'glow_intensity=' + glowIntensity,

@@ -34,10 +34,6 @@ function writeSettings(data) {
     f.open("w");
     f.write(data);
     f.close();
-    var df = new File(SETTINGS_DIR + "/settings.dirty");
-    df.open("w");
-    df.write("1");
-    df.close();
     return "OK";
 }
 

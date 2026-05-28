@@ -54,6 +54,7 @@ static char g_imgHovr[3][MAX_PAGES][MAX_ITEMS][512];
 static int  g_imgSize[3][MAX_PAGES][MAX_ITEMS]; // 0-200%, default 80
 
 static int   g_triggerKey = 32, g_triggerMod = 6;
+static int   g_settingsVersion = 0;
 static int   g_prevPageKey = 90, g_nextPageKey = 88; // Z, X
 static int   g_winAlpha = 60;      // 0-100, window opacity
 static int   g_bgAlpha = 60;       // 0-100, sector fill opacity only
@@ -295,12 +296,6 @@ static void GetSettingsPath(char *buf, int sz)
     _snprintf_s(buf, sz, _TRUNCATE, "%s\\WB_PieMenu\\settings.txt", a);
 }
 
-static void GetDirtyFlagPath(char *buf, int sz)
-{
-    char a[MAX_PATH]; GetEnvironmentVariableA("LOCALAPPDATA", a, sizeof(a));
-    _snprintf_s(buf, sz, _TRUNCATE, "%s\\WB_PieMenu\\settings.dirty", a);
-}
-
 static void DefaultsForMenu(int m)
 {
     for (int p = 0; p < MAX_PAGES; p++)
@@ -333,6 +328,7 @@ static void SetVal(const char *key, const char *val)
     else if (strcmp(key, "glow_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_glowColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
     else if (strcmp(key, "glow_intensity") == 0) { int n = atoi(val); if (n >= 0 && n <= 200) g_glowIntensity = n; return; }
     else if (strcmp(key, "page_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_pageColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
+    else if (strcmp(key, "settings_version") == 0) { g_settingsVersion = atoi(val); return; }
     else if (strcmp(key, "img_dist") == 0) { int n = atoi(val); if (n >= 20 && n <= 80) g_imgDist = n; return; }
     else if (strcmp(key, "text_dist") == 0) { int n = atoi(val); if (n >= 30 && n <= 90) g_textDist = n; return; }
     else if (strcmp(key, "text_size") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_textSize = n; return; }
@@ -1292,17 +1288,8 @@ static void ClearPendingInFile(void)
 static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
 {
     ApplyPending();
-    // Check dirty flag file (created by JS saveSettings, deleted after consumption)
-    char dpath[MAX_PATH]; GetDirtyFlagPath(dpath, sizeof(dpath));
-    FILE *df = NULL; fopen_s(&df, dpath, "r");
-    if (df) {
-        fclose(df);
-        LoadSettings();
-        RegisterTriggerHotkey();
-        DeleteFileA(dpath);
-    }
-
-    // Read pending ops from settings file
+    // Read settings file: skip reload if version matches
+    bool needReload = false;
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "r");
     if (f) {
@@ -1310,12 +1297,15 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
         int newKey = g_triggerKey, newMod = g_triggerMod;
         bool triggerChanged = false;
         bool triggerDisabled = false;
+        bool hasPendingEff = false;
+        int fileVersion = -1;
         while (fgets(l, sizeof(l), f)) {
             char k[64] = {0}, v[960] = {0};
             if (sscanf_s(l, " %63[^=]=%959[^\r\n]", k, 64, v, 960) >= 1) {
-                if (strcmp(k, "save_eff_pending") == 0) g_saveEffPending = (atoi(v) != 0);
+                if (strcmp(k, "settings_version") == 0) { fileVersion = atoi(v); }
+                else if (strcmp(k, "save_eff_pending") == 0) { g_saveEffPending = (atoi(v) != 0); hasPendingEff = true; }
                 else if (strcmp(k, "save_eff_path") == 0) strncpy_s(g_saveEffPath, sizeof(g_saveEffPath), v, _TRUNCATE);
-                else if (strcmp(k, "apply_eff_pending") == 0) g_applyEffPending = (atoi(v) != 0);
+                else if (strcmp(k, "apply_eff_pending") == 0) { g_applyEffPending = (atoi(v) != 0); hasPendingEff = true; }
                 else if (strcmp(k, "apply_eff_path") == 0) strncpy_s(g_applyEffPath, sizeof(g_applyEffPath), v, _TRUNCATE);
                 else if (strcmp(k, "trigger_disabled") == 0) { triggerDisabled = (atoi(v) != 0); }
                 else if (strcmp(k, "trigger_key") == 0) { newKey = atoi(v); triggerChanged = true; }
@@ -1323,13 +1313,23 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
             }
         }
         fclose(f);
-        if (triggerDisabled || (triggerChanged && (newKey == 0 || newMod == 0))) {
-            if (g_rawWnd) UnregisterHotKey(g_rawWnd, 0);
-            g_triggerKey = 0; g_triggerMod = 0;
-        } else if (triggerChanged && newKey && newMod) {
-            g_triggerKey = newKey; g_triggerMod = newMod;
-            RegisterTriggerHotkey();
+        // Full reload if version changed
+        if (fileVersion > 0 && fileVersion != g_settingsVersion) {
+            needReload = true;
+        } else {
+            if (triggerDisabled || (triggerChanged && (newKey == 0 || newMod == 0))) {
+                if (g_rawWnd) UnregisterHotKey(g_rawWnd, 0);
+                g_triggerKey = 0; g_triggerMod = 0;
+            } else if (triggerChanged && newKey && newMod) {
+                g_triggerKey = newKey; g_triggerMod = newMod;
+                RegisterTriggerHotkey();
+            }
+            if (hasPendingEff) ClearPendingInFile();
         }
+    }
+    if (needReload) {
+        LoadSettings();
+        RegisterTriggerHotkey();
     }
     if (g_saveEffPending && g_saveEffPath[0]) {
         g_saveEffPending = false;
@@ -1339,7 +1339,6 @@ static A_Err IdleHook(AEGP_GlobalRefcon, AEGP_IdleRefcon, A_long*)
         g_applyEffPending = false;
         DoApplyEff();
     }
-    ClearPendingInFile();
     return A_Err_NONE;
 }
 
