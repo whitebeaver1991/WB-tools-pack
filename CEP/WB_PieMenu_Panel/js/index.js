@@ -210,9 +210,7 @@ function collectFromUI() {
         var el = document.getElementById('itemName_' + i);
         if (el) items[curMenu][curPage][i].name = el.value;
         el = document.getElementById('itemEffect_' + i);
-        if (el) {
-            items[curMenu][curPage][i].effectDisplay = el.value;
-        }
+        if (el) items[curMenu][curPage][i].effectDisplay = el.textContent;
         el = document.getElementById('itemImage_' + i);
         if (el) items[curMenu][curPage][i].image = el.value;
         el = document.getElementById('itemSize_' + i);
@@ -412,66 +410,66 @@ function addImageField(card, idx) {
     card.appendChild(row);
 }
 
-function addEffectField(card, idx) {
-    var wrapper = document.createElement('div');
-    wrapper.className = 'effect-wrapper';
-    wrapper.style.position = 'relative';
+var g_effectSearchTargetIdx = -1;
 
+function addEffectField(card, idx) {
     var row = document.createElement('div');
     row.className = 'field-row';
     var lbl = document.createElement('label');
     var l = LANG[language] || LANG[0];
     lbl.textContent = l.sEffect;
     row.appendChild(lbl);
-    var input = document.createElement('input');
-    input.type = 'text'; input.id = 'itemEffect_' + idx;
-    input.autocomplete = 'off';
-    input.value = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
-    input.style.flex = '1';
-    row.appendChild(input);
-
-    var dropdown = document.createElement('div');
-    dropdown.className = 'effect-dropdown';
-    wrapper.appendChild(row);
-    wrapper.appendChild(dropdown);
-    card.appendChild(wrapper);
-
-    var timer = null;
-
-    input.addEventListener('input', function() {
-        if (timer) clearTimeout(timer);
-        items[curMenu][curPage][idx].effectDisplay = this.value;
-        timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
-        triggerAutoSave();
+    var display = document.createElement('div');
+    display.className = 'effect-display';
+    display.id = 'itemEffect_' + idx;
+    display.textContent = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
+    if (!display.textContent) display.classList.add('empty');
+    display.dataset.idx = idx;
+    display.addEventListener('click', function() {
+        openEffectSearch(parseInt(this.dataset.idx));
     });
+    row.appendChild(display);
+    card.appendChild(row);
+}
 
-    input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
-    input.addEventListener('focus', function() {
-        if (g_effectsCache) return;
-        evalScript('getAllEffects()').then(function(raw) {
-            var map = {}; g_effectsCache = [];
-            raw.split('\n').forEach(function(line) {
-                var p = line.indexOf('|');
-                if (p < 0) return;
-                var name = line.substring(0, p), match = line.substring(p + 1);
-                if (!map[match]) { map[match] = true; g_effectsCache.push({ name: name, match: match }); }
-            });
+function loadEffectsCache() {
+    if (g_effectsCache) return Promise.resolve(g_effectsCache);
+    return evalScript('getAllEffects()').then(function(raw) {
+        var map = {}; g_effectsCache = [];
+        raw.split('\n').forEach(function(line) {
+            var p = line.indexOf('|');
+            if (p < 0) return;
+            var name = line.substring(0, p), match = line.substring(p + 1);
+            if (!map[match]) { map[match] = true; g_effectsCache.push({ name: name, match: match }); }
         });
-        if (input.value) searchAndShow(input, dropdown, input.value);
+        return g_effectsCache;
     });
 }
 
-function searchAndShow(input, dropdown, query) {
-    if (query.length < 1) { dropdown.style.display = 'none'; return; }
-    if (!g_effectsCache || !g_effectsCache.length) return;
+function updateEffectResults(query) {
+    var container = document.getElementById('effectSearchResults');
+    var countEl = document.getElementById('effectSearchCount');
+    if (!query || query.length < 1) {
+        container.innerHTML = '<div style="padding:12px;color:#666;font-size:12px;text-align:center;">' +
+            (LANG[language] ? LANG[language].searchPH : 'Search effects...') + '</div>';
+        if (countEl) countEl.textContent = '';
+        return;
+    }
+    if (!g_effectsCache || !g_effectsCache.length) {
+        container.innerHTML = '<div style="padding:12px;color:#666;font-size:12px;text-align:center;">Loading...</div>';
+        return;
+    }
+    var q = query.toLowerCase();
     var results = g_effectsCache.filter(function(e) {
-        return e.name.toLowerCase().indexOf(query.toLowerCase()) >= 0 ||
-               e.match.toLowerCase().indexOf(query.toLowerCase()) >= 0;
+        return e.name.toLowerCase().indexOf(q) >= 0 || e.match.toLowerCase().indexOf(q) >= 0;
     });
-    if (results.length === 0) { dropdown.style.display = 'none'; return; }
-    dropdown.innerHTML = '';
-    dropdown.style.display = 'block';
-    var count = Math.min(results.length, 50);
+    if (countEl) countEl.textContent = results.length + ' results';
+    if (results.length === 0) {
+        container.innerHTML = '<div style="padding:12px;color:#888;font-size:12px;text-align:center;">No results</div>';
+        return;
+    }
+    container.innerHTML = '';
+    var count = Math.min(results.length, 100);
     for (var i = 0; i < count; i++) {
         var item = document.createElement('div');
         item.className = 'effect-item';
@@ -483,20 +481,43 @@ function searchAndShow(input, dropdown, query) {
         matchSpan.textContent = results[i].match;
         item.appendChild(nameSpan);
         item.appendChild(matchSpan);
-        item.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            var displayName = this.querySelector('.effect-name').textContent;
-            var matchName = this.querySelector('.effect-match').textContent;
-            input.value = displayName;
-            var idx = parseInt(input.id.replace('itemEffect_', ''));
-            items[curMenu][curPage][idx].effect = matchName;
-            items[curMenu][curPage][idx].effectDisplay = displayName;
-            dropdown.style.display = 'none';
-            triggerAutoSave();
-            setTimeout(function() { input.value = displayName; }, 0);
-        });
-        dropdown.appendChild(item);
+        (function(displayName, matchName) {
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                selectEffect(displayName, matchName);
+            });
+        })(results[i].name, results[i].match);
+        container.appendChild(item);
     }
+}
+
+function openEffectSearch(idx) {
+    g_effectSearchTargetIdx = idx;
+    var input = document.getElementById('effectSearchInput');
+    var overlay = document.getElementById('effectSearchOverlay');
+    input.value = items[curMenu][curPage][idx].effectDisplay || '';
+    updateEffectResults(input.value);
+    overlay.style.display = 'flex';
+    setTimeout(function() { input.focus(); input.select(); }, 50);
+}
+
+function closeEffectSearch() {
+    document.getElementById('effectSearchOverlay').style.display = 'none';
+    g_effectSearchTargetIdx = -1;
+}
+
+function selectEffect(displayName, matchName) {
+    var idx = g_effectSearchTargetIdx;
+    if (idx < 0) return;
+    items[curMenu][curPage][idx].effect = matchName;
+    items[curMenu][curPage][idx].effectDisplay = displayName;
+    var display = document.getElementById('itemEffect_' + idx);
+    if (display) {
+        display.textContent = displayName;
+        display.classList.remove('empty');
+    }
+    closeEffectSearch();
+    triggerAutoSave();
 }
 
 function addSizeSlider(card, idx) {
@@ -663,4 +684,28 @@ document.addEventListener('DOMContentLoaded', function() {
             body.classList.toggle('collapsed');
         });
     });
+
+    // Effect search overlay
+    var overlay = document.getElementById('effectSearchOverlay');
+    if (overlay) overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeEffectSearch();
+    });
+
+    var searchInput = document.getElementById('effectSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            updateEffectResults(this.value);
+        });
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeEffectSearch();
+            if (e.key === 'Enter') {
+                var list = document.getElementById('effectSearchResults');
+                var first = list ? list.querySelector('.effect-item') : null;
+                if (first) first.click();
+            }
+        });
+    }
+
+    // Preload effects cache when panel opens
+    loadEffectsCache();
 });
