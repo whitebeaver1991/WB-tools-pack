@@ -890,6 +890,7 @@ function saveSettings() {
         }
     }
     var l = LANG[language] || LANG[0];
+    lines.push('settings_dirty=1');
     evalScript('writeSettings(' + JSON.stringify(lines.join('\n')) + ')').then(function(r) {
         var s = document.getElementById('status');
         if (r === 'OK') { s.className = 'success'; s.textContent = l.saveOk; setTimeout(function(){s.textContent='';},3000); }
