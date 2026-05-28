@@ -436,15 +436,10 @@ function addEffectField(card, idx) {
     wrapper.appendChild(dropdown);
     card.appendChild(wrapper);
 
-    var isSelecting = false;
-    input._isSelecting = function() { return isSelecting; };
-    input._setSelecting = function(v) { isSelecting = v; };
     var timer = null;
 
     input.addEventListener('input', function() {
-        if (isSelecting) return;
         if (timer) clearTimeout(timer);
-        items[curMenu][curPage][idx].effect = this.value;
         items[curMenu][curPage][idx].effectDisplay = this.value;
         timer = setTimeout(function() { searchAndShow(input, dropdown, input.value); }, 100);
         triggerAutoSave();
@@ -492,14 +487,13 @@ function searchAndShow(input, dropdown, query) {
             e.preventDefault();
             var displayName = this.querySelector('.effect-name').textContent;
             var matchName = this.querySelector('.effect-match').textContent;
-            if (input._setSelecting) input._setSelecting(true);
             input.value = displayName;
-            if (input._setSelecting) input._setSelecting(false);
             var idx = parseInt(input.id.replace('itemEffect_', ''));
             items[curMenu][curPage][idx].effect = matchName;
             items[curMenu][curPage][idx].effectDisplay = displayName;
             dropdown.style.display = 'none';
             triggerAutoSave();
+            setTimeout(function() { input.value = displayName; }, 0);
         });
         dropdown.appendChild(item);
     }
