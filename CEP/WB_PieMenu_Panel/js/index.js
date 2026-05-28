@@ -9,6 +9,20 @@ var bgAlpha = 60, bgColor = '2a2a2a', glowColor = '3cb93c', glowIntensity = 100;
 var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
 var g_effectsCache = null;
+var g_debug = true;
+
+function dbg(msg) {
+    if (!g_debug) return;
+    console.log('[WB]', msg);
+    var el = document.getElementById('debugLog');
+    if (el) {
+        var t = document.createElement('div');
+        t.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+        el.appendChild(t);
+        el.scrollTop = el.scrollHeight;
+        if (el.style.display === 'none') el.style.display = 'block';
+    }
+}
 
 var LANG = [
     { title:'WB Menu Suite', save:'Save', record:'Record', trigger:'Trigger',
@@ -142,7 +156,10 @@ function saveSettings() {
             for (var i = 0; i < count; i++) {
                 var pref = labelMap[m].toLowerCase() + '_' + p + '_' + i;
                 if (items[m][p][i].name) lines.push(pref + '_n=' + items[m][p][i].name);
-                if (items[m][p][i].effect) lines.push(pref + '_e=' + items[m][p][i].effect);
+                if (items[m][p][i].effect) {
+                    dbg('save slot [' + m + '][' + p + '][' + i + '] effect="' + items[m][p][i].effect + '" display="' + (items[m][p][i].effectDisplay||'') + '"');
+                    lines.push(pref + '_e=' + items[m][p][i].effect);
+                }
                 if (items[m][p][i].effectDisplay) lines.push(pref + '_en=' + items[m][p][i].effectDisplay);
                 if (items[m][p][i].image) lines.push(pref + '_img=' + items[m][p][i].image);
                 if (items[m][p][i].size && items[m][p][i].size !== 80) lines.push(pref + '_sz=' + items[m][p][i].size);
@@ -158,8 +175,12 @@ function saveSettings() {
 }
 
 function triggerAutoSave() {
+    dbg('triggerAutoSave');
     if (g_saveTimer) clearTimeout(g_saveTimer);
-    g_saveTimer = setTimeout(saveSettings, 250);
+    g_saveTimer = setTimeout(function() {
+        dbg('autoSave firing');
+        saveSettings();
+    }, 250);
 }
 
 function collectFromUI() {
@@ -332,9 +353,12 @@ function updateGlobals() {
    }
 
 function renderMenu() {
+    dbg('renderMenu start: curMenu=' + curMenu + ' curPage=' + curPage + ' pieCount=' + pieCount + ' quickCount=' + quickCount);
     var container = document.getElementById('itemsContainer');
+    if (!container) { dbg('  ABORT: no itemsContainer'); return; }
     container.innerHTML = '';
     var count = (curMenu === 0) ? pieCount : (curMenu === 1) ? quickCount : 8;
+    dbg('  rendering ' + count + ' slots');
 
     for (var i = 0; i < count; i++) {
         var card = document.createElement('div');
@@ -420,18 +444,21 @@ function addEffectField(card, idx) {
     var display = document.createElement('div');
     display.className = 'effect-display';
     display.id = 'itemEffect_' + idx;
-    display.textContent = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
+    var txt = items[curMenu][curPage][idx].effectDisplay || items[curMenu][curPage][idx].effect || '';
+    display.textContent = txt;
     if (!display.textContent) display.classList.add('empty');
     display.dataset.idx = idx;
     display.addEventListener('click', function() {
         openEffectSearch(parseInt(this.dataset.idx));
     });
+    dbg('addEffectField idx=' + idx + ' text="' + txt + '" id=itemEffect_' + idx);
     row.appendChild(display);
     card.appendChild(row);
 }
 
 function loadEffectsCache() {
-    if (g_effectsCache) return Promise.resolve(g_effectsCache);
+    if (g_effectsCache) { dbg('cache already loaded: ' + g_effectsCache.length + ' effects'); return Promise.resolve(g_effectsCache); }
+    dbg('loading effects cache from ExtendScript...');
     return evalScript('getAllEffects()').then(function(raw) {
         var map = {}; g_effectsCache = [];
         raw.split('\n').forEach(function(line) {
@@ -440,6 +467,9 @@ function loadEffectsCache() {
             var name = line.substring(0, p), match = line.substring(p + 1);
             if (!map[match]) { map[match] = true; g_effectsCache.push({ name: name, match: match }); }
         });
+        dbg('cache loaded: ' + g_effectsCache.length + ' unique effects');
+        var sample = g_effectsCache.filter(function(e) { return e.name.toLowerCase().indexOf('re:') >= 0 || e.match.toLowerCase().indexOf('re:') >= 0; });
+        dbg('effects matching "re:" = ' + sample.length + ' samples: ' + sample.slice(0,3).map(function(e){return e.name+'|'+e.match;}).join(', '));
         return g_effectsCache;
     });
 }
@@ -454,6 +484,7 @@ function updateEffectResults(query) {
         return;
     }
     if (!g_effectsCache || !g_effectsCache.length) {
+        dbg('search: cache not ready yet');
         container.innerHTML = '<div style="padding:12px;color:#666;font-size:12px;text-align:center;">Loading...</div>';
         return;
     }
@@ -461,6 +492,8 @@ function updateEffectResults(query) {
     var results = g_effectsCache.filter(function(e) {
         return e.name.toLowerCase().indexOf(q) >= 0 || e.match.toLowerCase().indexOf(q) >= 0;
     });
+    dbg('search "' + query + '" → ' + results.length + ' results');
+    if (results.length > 0) dbg('first 3: ' + results.slice(0,3).map(function(e){return e.name+'|'+e.match;}).join(', '));
     if (countEl) countEl.textContent = results.length + ' results';
     if (results.length === 0) {
         container.innerHTML = '<div style="padding:12px;color:#888;font-size:12px;text-align:center;">No results</div>';
@@ -491,6 +524,8 @@ function updateEffectResults(query) {
 
 function openEffectSearch(idx) {
     g_effectSearchTargetIdx = idx;
+    dbg('openEffectSearch idx=' + idx + ' curMenu=' + curMenu + ' curPage=' + curPage);
+    dbg('  items data before open: effect="' + items[curMenu][curPage][idx].effect + '" effectDisplay="' + items[curMenu][curPage][idx].effectDisplay + '"');
     var input = document.getElementById('effectSearchInput');
     var overlay = document.getElementById('effectSearchOverlay');
     input.value = items[curMenu][curPage][idx].effectDisplay || '';
@@ -508,12 +543,17 @@ function closeEffectSearch() {
 
 function selectEffect(displayName, matchName) {
     var idx = g_effectSearchTargetIdx;
-    if (idx < 0) return;
+    dbg('selectEffect idx=' + idx + ' displayName="' + displayName + '" matchName="' + matchName + '"');
+    if (idx < 0) { dbg('  ABORT: no target idx'); return; }
     items[curMenu][curPage][idx].effect = matchName;
     items[curMenu][curPage][idx].effectDisplay = displayName;
+    dbg('  items[' + curMenu + '][' + curPage + '][' + idx + '] set: effect="' + matchName + '" effectDisplay="' + displayName + '"');
     closeEffectSearch();
+    dbg('  calling triggerAutoSave...');
     triggerAutoSave();
+    dbg('  calling renderMenu...');
     renderMenu();
+    dbg('  done');
 }
 
 function addSizeSlider(card, idx) {
