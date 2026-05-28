@@ -83,6 +83,16 @@ body {
     cursor: pointer;
 }
 .btn-lang:hover { background: #444; color: #ddd; }
+.btn-scan {
+    padding: 4px 8px;
+    background: #2a4a2a;
+    border: 1px solid #3a6a3a;
+    color: #8c8;
+    border-radius: 2px;
+    font-size: 11px;
+    cursor: pointer;
+}
+.btn-scan:hover { background: #3a5a3a; color: #aea; }
 
 .btn-save {
     padding: 5px 12px;

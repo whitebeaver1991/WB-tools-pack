@@ -1065,6 +1065,8 @@ function updateGlobals() {
 
 function renderMenu() {
     dbg('renderMenu start: curMenu=' + curMenu + ' curPage=' + curPage + ' pieCount=' + pieCount + ' quickCount=' + quickCount);
+    var zc = document.getElementById('zoomContent');
+    var savedScroll = zc ? zc.scrollTop : 0;
     var container = document.getElementById('itemsContainer');
     if (!container) { dbg('  ABORT: no itemsContainer'); return; }
     container.innerHTML = '';
@@ -1100,6 +1102,10 @@ function renderMenu() {
         addSizeSlider(card, i);
 
         container.appendChild(card);
+    }
+    if (zc) {
+        zc.scrollTop = savedScroll;
+        setTimeout(function() { if (zc) zc.scrollTop = savedScroll; }, 50);
     }
 }
 
@@ -1172,16 +1178,10 @@ function addEffectField(card, idx) {
     clearBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var i = parseInt(display.dataset.idx);
-        var zc = document.getElementById('zoomContent');
-        var savedScroll = zc ? zc.scrollTop : 0;
         items[curMenu][curPage][i].effect = '';
         items[curMenu][curPage][i].effectDisplay = '';
         renderMenu();
-        if (zc) {
-            zc.scrollTop = savedScroll;
-            setTimeout(function() { zc.scrollTop = savedScroll; }, 50);
-        }
-        triggerAutoSave();
+        saveSettings();
     });
     wrap.appendChild(clearBtn);
     dbg('addEffectField idx=' + idx + ' text="' + txt + '" id=itemEffect_' + idx);
@@ -1287,7 +1287,7 @@ function selectEffect(displayName, matchName) {
         el.classList.remove('empty');
         dbg('  dom updated: text="' + displayName + '"');
     }
-    triggerAutoSave();
+    saveSettings();
 }
 
 function saveScrollPos() {
@@ -1548,5 +1548,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1200);
             }
         }
+    });
+
+    // Scan Effects button
+    document.getElementById('scanBtn').addEventListener('click', function() {
+        var btn = this;
+        var origText = btn.textContent;
+        btn.textContent = 'Scanning...';
+        btn.disabled = true;
+        dbg('scan: fetching effects from AE...');
+        evalScript('getAllEffects()').then(function(raw) {
+            var added = 0;
+            raw.split('\n').forEach(function(line) {
+                var p = line.indexOf('|');
+                if (p < 0) return;
+                var name = line.substring(0, p), match = line.substring(p + 1);
+                if (!match) return;
+                if (!g_nameMap[match]) {
+                    var display = name || match;
+                    g_nameMap[match] = display;
+                    added++;
+                }
+            });
+            // Reload cache
+            g_effectsCache = null;
+            loadEffectsCache();
+            dbg('scan complete: ' + added + ' new effects added to name map');
+            btn.textContent = '✔ ' + added + ' new';
+            btn.style.color = '#5c5';
+            setTimeout(function() { btn.textContent = origText; btn.style.color = ''; btn.disabled = false; }, 2000);
+        });
     });
 });
