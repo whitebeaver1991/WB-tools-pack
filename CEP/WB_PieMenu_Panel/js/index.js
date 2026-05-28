@@ -513,16 +513,7 @@ function selectEffect(displayName, matchName) {
     items[curMenu][curPage][idx].effectDisplay = displayName;
     closeEffectSearch();
     triggerAutoSave();
-    var old = document.getElementById('itemEffect_' + idx);
-    if (old) {
-        var el = document.createElement('div');
-        el.className = 'effect-display';
-        el.id = 'itemEffect_' + idx;
-        el.textContent = displayName;
-        el.dataset.idx = idx;
-        el.addEventListener('click', function() { openEffectSearch(parseInt(this.dataset.idx)); });
-        old.parentNode.replaceChild(el, old);
-    }
+    renderMenu();
 }
 
 function addSizeSlider(card, idx) {
@@ -699,7 +690,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var searchInput = document.getElementById('effectSearchInput');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            updateEffectResults(this.value);
+            if (g_effectsCache) {
+                updateEffectResults(this.value);
+            } else {
+                loadEffectsCache().then(function() {
+                    updateEffectResults(searchInput.value);
+                });
+            }
         });
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeEffectSearch();
