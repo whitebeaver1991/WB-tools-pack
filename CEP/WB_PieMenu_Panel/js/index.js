@@ -5,6 +5,7 @@ var labelMap = ['Pie','Quick','Wheel'];
 var curMenu = 0, curPage = 0;
 var pieCount = 4, quickCount = 6;
 var triggerKey = 32, triggerMod = 6, winAlpha = 60;
+var prevPageKey = 90, nextPageKey = 88; // Z, X
 var bgAlpha = 60, bgColor = '2a2a2a', glowColor = '3cb93c', glowIntensity = 100;
 var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
@@ -807,6 +808,8 @@ function parseSettings(data) {
     });
     if (parsed['trigger_key']) triggerKey = parseInt(parsed['trigger_key']) || 32;
     if (parsed['trigger_mod']) triggerMod = parseInt(parsed['trigger_mod']) || 6;
+    if (parsed['prev_page_key']) prevPageKey = parseInt(parsed['prev_page_key']) || 90;
+    if (parsed['next_page_key']) nextPageKey = parseInt(parsed['next_page_key']) || 88;
     if (parsed['win_alpha']) winAlpha = parseInt(parsed['win_alpha']) || 60;
     if (parsed['bg_alpha']) bgAlpha = parseInt(parsed['bg_alpha']) || 60;
     if (parsed['bg_color']) bgColor = parsed['bg_color'];
@@ -855,6 +858,7 @@ function loadSettings() {
 function saveSettings() {
     collectFromUI();
     var lines = ['trigger_key=' + triggerKey, 'trigger_mod=' + triggerMod,
+                 'prev_page_key=' + prevPageKey, 'next_page_key=' + nextPageKey,
                  'win_alpha=' + winAlpha, 'bg_alpha=' + bgAlpha, 'bg_color=' + bgColor,
                  'glow_color=' + glowColor, 'glow_intensity=' + glowIntensity,
                  'img_dist=' + imgDist, 'text_dist=' + textDist, 'text_size=' + textSize,
@@ -967,6 +971,7 @@ function updateAll() {
     updatePageTabs();
     renderMenu();
     updateTriggerDisplay();
+    updatePageKeyDisplay();
     updateGlobals();
     setLanguage();
 }
@@ -1350,6 +1355,17 @@ function formatKeys(key, mod) {
     return mods.join('+') + (mods.length ? '+' : '') + keyName;
 }
 
+function formatKeyName(key) {
+    return {32:'Space', 9:'Tab', 13:'Enter', 27:'Esc', 90:'Z', 88:'X'}[key] || (key >= 65 && key <= 90 ? String.fromCharCode(key) : 'VK_' + key);
+}
+
+function updatePageKeyDisplay() {
+    var pi = document.getElementById('prevPageInput');
+    if (pi) pi.value = formatKeyName(prevPageKey);
+    var ni = document.getElementById('nextPageInput');
+    if (ni) ni.value = formatKeyName(nextPageKey);
+}
+
 var isRecording = false;
 function startRecording(inputEl, btnEl, callback) {
     isRecording = true;
@@ -1457,6 +1473,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isRecording) return;
         startRecording(document.getElementById('triggerInput'), this, function(k, m) { triggerKey = k; triggerMod = m; });
     });
+
+    // Page key recording (single key only)
+    function makePageRecorder(inputId, btnId, setter) {
+        var btn = document.getElementById(btnId);
+        var input = document.getElementById(inputId);
+        if (!btn || !input) return;
+        btn.addEventListener('click', function() {
+            if (isRecording) return;
+            isRecording = true;
+            input.value = '...';
+            input.className = 'recording';
+            btn.textContent = '...';
+            function onKeyDown(e) {
+                e.preventDefault();
+                var key = e.keyCode;
+                if (key === 16 || key === 17 || key === 18 || key === 91) return;
+                isRecording = false;
+                input.className = ''; btn.textContent = 'Record';
+                document.removeEventListener('keydown', onKeyDown, true);
+                setter(key);
+                input.value = formatKeyName(key);
+                saveSettings();
+            }
+            document.addEventListener('keydown', onKeyDown, true);
+        });
+    }
+    makePageRecorder('prevPageInput', 'prevPageBtn', function(k) { prevPageKey = k; });
+    makePageRecorder('nextPageInput', 'nextPageBtn', function(k) { nextPageKey = k; });
 
     document.getElementById('saveBtn').addEventListener('click', saveSettings);
 

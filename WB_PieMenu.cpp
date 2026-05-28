@@ -54,6 +54,7 @@ static char g_imgHovr[3][MAX_PAGES][MAX_ITEMS][512];
 static int  g_imgSize[3][MAX_PAGES][MAX_ITEMS]; // 0-200%, default 80
 
 static int   g_triggerKey = 32, g_triggerMod = 6;
+static int   g_prevPageKey = 90, g_nextPageKey = 88; // Z, X
 static int   g_winAlpha = 60;      // 0-100, window opacity
 static int   g_bgAlpha = 60;       // 0-100, sector fill opacity only
 static int   g_bgColor = 0x2A2A2A;
@@ -317,6 +318,8 @@ static void SetVal(const char *key, const char *val)
     else if (strcmp(key, "quick_count") == 0) { int n = atoi(val); if (n >= 1 && n <= 9) g_quickCount = n; return; }
     else if (strcmp(key, "trigger_key") == 0) { g_triggerKey = atoi(val); return; }
     else if (strcmp(key, "trigger_mod") == 0) { g_triggerMod = atoi(val); return; }
+    else if (strcmp(key, "prev_page_key") == 0) { int n = atoi(val); if (n > 0) g_prevPageKey = n; return; }
+    else if (strcmp(key, "next_page_key") == 0) { int n = atoi(val); if (n > 0) g_nextPageKey = n; return; }
     else if (strcmp(key, "win_alpha") == 0) { int n = atoi(val); if (n >= 0 && n <= 100) g_winAlpha = n; return; }
     else if (strcmp(key, "bg_alpha") == 0) { int n = atoi(val); if (n >= 0 && n <= 100) g_bgAlpha = n; return; }
     else if (strcmp(key, "bg_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_bgColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
@@ -1132,8 +1135,8 @@ static void ShowMenu(void)
                 case WM_RBUTTONDOWN: HideMenu(); return 0;
                 case WM_KEYDOWN: {
                     if (w == VK_ESCAPE) { HideMenu(); return 0; }
-                    if (w == 'Z' || w == 'z') { GotoPage(g_curPage - 1); return 0; }
-                    if (w == 'X' || w == 'x') { GotoPage(g_curPage + 1); return 0; }
+                    if (w == g_prevPageKey || (w >= 'a' && w <= 'z' && w == g_prevPageKey + 32)) { GotoPage(g_curPage - 1); return 0; }
+                    if (w == g_nextPageKey || (w >= 'a' && w <= 'z' && w == g_nextPageKey + 32)) { GotoPage(g_curPage + 1); return 0; }
                     if (w >= '1' && w <= '9') {
                         int idx = (int)(w - '1');
                         if (idx < g_itemCount) { SelectItem(idx); return 0; }
