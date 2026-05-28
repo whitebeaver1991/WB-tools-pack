@@ -209,8 +209,6 @@ function collectFromUI() {
     for (var i = 0; i < count; i++) {
         var el = document.getElementById('itemName_' + i);
         if (el) items[curMenu][curPage][i].name = el.value;
-        el = document.getElementById('itemEffect_' + i);
-        if (el) items[curMenu][curPage][i].effectDisplay = el.textContent;
         el = document.getElementById('itemImage_' + i);
         if (el) items[curMenu][curPage][i].image = el.value;
         el = document.getElementById('itemSize_' + i);
@@ -511,13 +509,15 @@ function selectEffect(displayName, matchName) {
     if (idx < 0) return;
     items[curMenu][curPage][idx].effect = matchName;
     items[curMenu][curPage][idx].effectDisplay = displayName;
-    var display = document.getElementById('itemEffect_' + idx);
-    if (display) {
-        display.textContent = displayName;
-        display.classList.remove('empty');
-    }
     closeEffectSearch();
     triggerAutoSave();
+    setTimeout(function() {
+        var display = document.getElementById('itemEffect_' + idx);
+        if (display) {
+            display.textContent = displayName;
+            display.classList.remove('empty');
+        }
+    }, 0);
 }
 
 function addSizeSlider(card, idx) {
