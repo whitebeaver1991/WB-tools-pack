@@ -10,18 +10,24 @@ var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
 var g_effectsCache = null;
 var g_debug = true;
+var g_logLines = [];
 
 function dbg(msg) {
     if (!g_debug) return;
     console.log('[WB]', msg);
+    var ts = new Date();
+    var time = ('0'+ts.getHours()).slice(-2) + ':' + ('0'+ts.getMinutes()).slice(-2) + ':' + ('0'+ts.getSeconds()).slice(-2);
+    var line = time + ' ' + msg;
+    g_logLines.push(line);
+    var wrap = document.getElementById('debugLogWrap');
     var el = document.getElementById('debugLog');
     if (el) {
         var t = document.createElement('div');
-        t.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+        t.textContent = line;
         el.appendChild(t);
         el.scrollTop = el.scrollHeight;
-        if (el.style.display === 'none') el.style.display = 'block';
     }
+    if (wrap && wrap.style.display === 'none') wrap.style.display = 'block';
 }
 
 var LANG = [
@@ -73,7 +79,7 @@ for (var m = 0; m < 3; m++) {
     for (var p = 0; p < PAGES; p++) {
         items[m][p] = [];
         for (var i = 0; i < MAX; i++)
-            items[m][p][i] = { name: '', effect: '', image: '', size: 80 };
+            items[m][p][i] = { name: '', effect: '', effectDisplay: '', image: '', size: 80 };
     }
 }
 
@@ -465,7 +471,11 @@ function loadEffectsCache() {
             var p = line.indexOf('|');
             if (p < 0) return;
             var name = line.substring(0, p), match = line.substring(p + 1);
-            if (!map[match]) { map[match] = true; g_effectsCache.push({ name: name, match: match }); }
+            if (!map[match]) {
+                var display = name || match;
+                map[match] = true;
+                g_effectsCache.push({ name: display, match: match });
+            }
         });
         dbg('cache loaded: ' + g_effectsCache.length + ' unique effects');
         var sample = g_effectsCache.filter(function(e) { return e.name.toLowerCase().indexOf('re:') >= 0 || e.match.toLowerCase().indexOf('re:') >= 0; });
@@ -750,4 +760,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Preload effects cache when panel opens
     loadEffectsCache();
+
+    // Copy debug log button
+    document.getElementById('copyLogBtn').addEventListener('click', function() {
+        var txt = g_logLines.join('\n');
+        // Method 1: copy to clipboard via textarea
+        var done = false;
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = txt;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.top = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            done = document.execCommand('copy');
+            document.body.removeChild(ta);
+        } catch(e) {}
+        // Method 2: write to desktop file via ExtendScript
+        if (!done) {
+            try {
+                var safe = txt.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                evalScript('try{var f=new File("~/Desktop/wb_debug.log");f.open("w");f.write("' + safe + '");f.close()}catch(e){}');
+                done = true;
+            } catch(e) {}
+        }
+        // Method 3: download as file (CEF fallback)
+        if (!done) {
+            try {
+                var blob = new Blob([txt], {type: 'text/plain'});
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'wb_debug_' + Date.now() + '.log';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                done = true;
+            } catch(e2) {}
+        }
+        if (!done) {
+            // Last resort: tell user to use DevTools
+            dbg('OPEN DEVTOOLS: Right-click panel → Inspect → Console tab → type: copy(g_logLines.join("\\n"))');
+        } else {
+            // Brief visual flash
+            var btn = document.getElementById('copyLogBtn');
+            if (btn) {
+                var orig = btn.textContent;
+                btn.textContent = '✔ Copied';
+                btn.style.color = '#5c5';
+                setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1200);
+            }
+        }
+    });
 });
