@@ -81,6 +81,11 @@ static bool     g_layoutInit = false;
 static double   g_arcAngleDeg = -90.0;
 static int      g_pendingItem = -1;
 static UINT_PTR g_timerId = 0;
+static bool     g_guideEnabled = false;
+static int      g_guideWidth   = 2;
+static int      g_guideColor   = 0xC0C0C0;
+static int      g_mouseX       = 0;
+static int      g_mouseY       = 0;
 
 static const UINT_PTR TIMEOUT_TID = 101;
 
@@ -333,6 +338,9 @@ static void SetVal(const char *key, const char *val)
     else if (strcmp(key, "text_dist") == 0) { int n = atoi(val); if (n >= 30 && n <= 90) g_textDist = n; return; }
     else if (strcmp(key, "text_size") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_textSize = n; return; }
     else if (strcmp(key, "menu_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_menuScale = n; return; }
+    else if (strcmp(key, "guide_enabled") == 0) { g_guideEnabled = (atoi(val) != 0); return; }
+    else if (strcmp(key, "guide_width") == 0) { int n = atoi(val); if (n >= 1 && n <= 6) g_guideWidth = n; return; }
+    else if (strcmp(key, "guide_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_guideColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }
     else if (strcmp(key, "numpad_enabled") == 0) { g_numpadEnabled = (atoi(val) != 0); return; }
     else if (strcmp(key, "numpad_handle") == 0) { g_numpadHandle = (HANDLE)(INT_PTR)_strtoui64(val, NULL, 16); return; }
     else if (strcmp(key, "numpad_name") == 0) { strncpy_s(g_numpadName, sizeof(g_numpadName), val, _TRUNCATE); return; }
@@ -804,6 +812,17 @@ static void SelectItem(int idx)
 
 // ?????? Draw helpers ??????????????????????????????????????????????????????????????????????????????????????????
 // ---- PIE DRAW ----
+static void DrawGuide(HDC dc, int cx, int cy)
+{
+    if (!g_guideEnabled) return;
+    HPEN gp = CreatePen(PS_SOLID, g_guideWidth, g_guideColor);
+    HPEN op = (HPEN)SelectObject(dc, gp);
+    MoveToEx(dc, cx, cy, NULL);
+    LineTo(dc, g_mouseX, g_mouseY);
+    SelectObject(dc, op);
+    DeleteObject(gp);
+}
+
 static void DrawPie(HDC hdc)
 {
     if (!g_layoutInit) InitLayout();
@@ -903,6 +922,8 @@ static void DrawPie(HDC hdc)
     SetTextColor(dc, g_pageColor); SetTextAlign(dc, TA_CENTER | TA_TOP);
     TextOutA(dc, ct, ct + 10, pageBuf, (int)strlen(pageBuf));
 
+    DrawGuide(dc, ct, ct);
+
     // Ring + arc
     SelectObject(dc, GetStockObject(HOLLOW_BRUSH));
     HPEN rp = CreatePen(PS_SOLID, RING_STROKE, RGB(55,55,60));
@@ -958,6 +979,8 @@ static void DrawQuick(HDC hdc)
     char pageBuf[16]; _snprintf_s(pageBuf, 16, _TRUNCATE, "%d/%d", g_curPage + 1, g_totalPages);
     SetTextColor(dc, g_pageColor); SetTextAlign(dc, TA_CENTER | TA_TOP);
     TextOutA(dc, ws/2, startY + totalH + 12, pageBuf, (int)strlen(pageBuf));
+
+    DrawGuide(dc, ws/2, ws/2);
 
     SelectObject(dc, of); DeleteObject(font);
     BitBlt(hdc, 0, 0, ws, ws, dc, 0, 0, SRCCOPY);
@@ -1051,6 +1074,8 @@ static void DrawWheel(HDC hdc)
     char buf[16]; _snprintf_s(buf, 16, _TRUNCATE, "%d/%d", g_curPage + 1, g_totalPages);
     TextOutA(dc, ct, ct + 20, buf, (int)strlen(buf));
 
+    DrawGuide(dc, ct, ct);
+
     SelectObject(dc, of); DeleteObject(font);
     BitBlt(hdc, 0, 0, ws, ws, dc, 0, 0, SRCCOPY);
     SelectObject(dc, old); DeleteObject(bmp); DeleteDC(dc);
@@ -1117,11 +1142,12 @@ static void ShowMenu(void)
                 case WM_ERASEBKGND: return 1;
                 case WM_MOUSEMOVE: {
                     int x = GET_X_LPARAM(l), y = GET_Y_LPARAM(l);
+                    g_mouseX = x; g_mouseY = y;
                     int hov = -1;
                     if (g_menuType == MENU_PIE) hov = HitTestSector(x, y);
                     else if (g_menuType == MENU_QUICK) hov = HitTestQuick(x, y);
                     else hov = HitTestWheel(x, y);
-                    if (hov != g_hover) { g_hover = hov; InvalidateRect(h, NULL, FALSE); }
+                    if (hov != g_hover || g_guideEnabled) { g_hover = hov; InvalidateRect(h, NULL, FALSE); }
                     if (g_menuType == MENU_PIE) {
                         double dx = (double)(x - (WIN_SIZE_BASE * g_menuScale / 100 / 2)), dy = (double)(y - (WIN_SIZE_BASE * g_menuScale / 100 / 2));
                         if (sqrt(dx*dx+dy*dy) > 2.0) g_arcAngleDeg = atan2(dy,dx)*180.0/M_PI;

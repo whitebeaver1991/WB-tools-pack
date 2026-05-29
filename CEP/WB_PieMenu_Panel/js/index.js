@@ -10,6 +10,7 @@ var bgAlpha = 60, bgColor = '2a2a2a', glowColor = '3cb93c', glowIntensity = 100;
 var pageColor = '78787d';
 var imgDist = 45, textDist = 85, textSize = 100, uiZoom = 100, menuScale = 100;
 var numpadEnabled = false, language = 0;
+var guideEnabled = false, guideColor = 'c0c0c0', guideWidth = 2;
 var g_settingsVersion = 0;
 var g_effectsCache = null;
 var g_nameMap = null;
@@ -830,6 +831,9 @@ function parseSettings(data) {
     if (parsed['menu_scale']) menuScale = parseInt(parsed['menu_scale']) || 100;
     if (parsed['language']) language = parseInt(parsed['language']) || 0;
     if (parsed['numpad_enabled']) numpadEnabled = parsed['numpad_enabled'] === '1';
+    if (parsed['guide_enabled']) guideEnabled = parsed['guide_enabled'] === '1';
+    if (parsed['guide_color']) guideColor = parsed['guide_color'];
+    if (parsed['guide_width']) guideWidth = parseInt(parsed['guide_width']) || 2;
     if (parsed['menu_type']) curMenu = parseInt(parsed['menu_type']) || 0;
     if (parsed['pie_count']) pieCount = Math.min(Math.max(parseInt(parsed['pie_count'])||4,2),8);
     if (parsed['quick_count']) quickCount = Math.min(Math.max(parseInt(parsed['quick_count'])||6,1),9);
@@ -875,6 +879,7 @@ function saveSettings() {
                  'img_dist=' + imgDist, 'text_dist=' + textDist, 'text_size=' + textSize,
                   'ui_zoom=' + uiZoom, 'menu_scale=' + menuScale, 'language=' + language,
                  'numpad_enabled=' + (numpadEnabled?'1':'0'),
+                 'guide_enabled=' + (guideEnabled?'1':'0'), 'guide_color=' + guideColor, 'guide_width=' + guideWidth,
                  'menu_type=' + curMenu, 'pie_count=' + pieCount, 'quick_count=' + quickCount];
     for (var m = 0; m < 3; m++) {
         var count = (m === 0) ? pieCount : (m === 1) ? quickCount : 8;
@@ -924,6 +929,16 @@ function collectFromUI() {
     if (bc) bgColor = bc.value.replace('#', '').toLowerCase();
     var bct = document.getElementById('bgColorText');
     if (bct) bct.textContent = '#' + bgColor.toUpperCase();
+    var gt = document.getElementById('guideToggle');
+    if (gt) guideEnabled = gt.checked;
+    var gw = document.getElementById('guideWidthSlider');
+    if (gw) guideWidth = parseInt(gw.value) || 2;
+    var gwv = document.getElementById('guideWidthValue');
+    if (gwv) gwv.textContent = guideWidth;
+    var gdc = document.getElementById('guideColorInput');
+    if (gdc) guideColor = gdc.value.replace('#', '').toLowerCase();
+    var gdct = document.getElementById('guideColorText');
+    if (gdct) gdct.textContent = '#' + guideColor.toUpperCase();
     var gc = document.getElementById('glowColorInput');
     if (gc) glowColor = gc.value.replace('#', '').toLowerCase();
     var gct = document.getElementById('glowColorText');
@@ -1073,6 +1088,16 @@ function updateGlobals() {
     if (qc) quickCount = parseInt(qc.value) || 6;
     var nt = document.getElementById('numpadToggle');
     if (nt) nt.checked = numpadEnabled;
+    var gt = document.getElementById('guideToggle');
+    if (gt) gt.checked = guideEnabled;
+    var gw = document.getElementById('guideWidthSlider');
+    if (gw) gw.value = guideWidth;
+    var gwv = document.getElementById('guideWidthValue');
+    if (gwv) gwv.textContent = guideWidth;
+    var gdc = document.getElementById('guideColorInput');
+    if (gdc) gdc.value = '#' + guideColor;
+    var gdct = document.getElementById('guideColorText');
+    if (gdct) gdct.textContent = '#' + guideColor.toUpperCase();
     var pc = document.getElementById('pieCountSelect');
     if (pc) pc.value = '' + pieCount;
     var qc = document.getElementById('quickCountSelect');
@@ -1494,6 +1519,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var nt = document.getElementById('numpadToggle');
     if (nt) nt.addEventListener('change', function() { numpadEnabled = this.checked; triggerAutoSave(); });
 
+    var gt = document.getElementById('guideToggle');
+    if (gt) gt.addEventListener('change', function() { guideEnabled = this.checked; triggerAutoSave(); });
+    var guildWidthEl = document.getElementById('guideWidthSlider');
+    var guildWidthVal = document.getElementById('guideWidthValue');
+    if (guildWidthEl && guildWidthVal) guildWidthEl.addEventListener('input', function() { guildWidthVal.textContent = this.value; guideWidth = parseInt(this.value); triggerAutoSave(); });
+    var guideColorEl = document.getElementById('guideColorInput');
+    if (guideColorEl) guideColorEl.addEventListener('input', function() {
+        document.getElementById('guideColorText').textContent = this.value.toUpperCase();
+        triggerAutoSave();
+    });
+
     document.getElementById('triggerBtn').addEventListener('click', function() {
         if (isRecording) return;
         startRecording(document.getElementById('triggerInput'), this, function(k, m) { triggerKey = k; triggerMod = m; });
@@ -1545,6 +1581,25 @@ document.addEventListener('DOMContentLoaded', function() {
             body.classList.toggle('collapsed');
         });
     });
+
+    // Settings modal toggle
+    var settingsBtn = document.getElementById('settingsBtn');
+    var settingsModal = document.getElementById('settingsModal');
+    var settingsClose = document.getElementById('settingsCloseBtn');
+    if (settingsBtn && settingsModal) {
+        function openSettings() {
+            settingsModal.style.display = 'flex';
+            updateTriggerDisplay();
+            updatePageKeyDisplay();
+            updateGlobals();
+        }
+        function closeSettings() { settingsModal.style.display = 'none'; }
+        settingsBtn.addEventListener('click', openSettings);
+        if (settingsClose) settingsClose.addEventListener('click', closeSettings);
+        settingsModal.addEventListener('click', function(e) {
+            if (e.target === this) closeSettings();
+        });
+    }
 
     // Effect search overlay
     var overlay = document.getElementById('effectSearchOverlay');
