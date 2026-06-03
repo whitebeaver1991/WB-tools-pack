@@ -1,0 +1,56 @@
+# Build artifacts
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.sbr
+*.bsc
+*.res
+*.tlog/
+*.recipe
+*.FileListAbsolute.txt
+*.lastbuildstate
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.user
+x64/
+Release/
+Debug/
+Win32/
+
+# Temp / env
+.env
+.local
+temp/
+tmp/
+*.log
+
+# Deprecated deploy intermediates
+_deploy/vbuild.*/
+_deploy/PieMenu_vbuild.*/
+_deploy/v0.0.*/
+_deploy/Combined/
+_deploy/FlowBoard/
+_deploy/PieMenu/
+_deploy/scripts/
+_deploy/*.js
+_deploy/*.ps1
+_deploy/*.bat
+_deploy/*.txt
+_deploy/*.html
+_deploy/*.md
+_deploy/infinite_preview.html
+
+# Keep current deploy (v0.1.0)
+!_deploy/v0.1.0/
+
+# Installers / zips
+*.zip
+*.7z
+*.rar
+
+# External SDK / packages
+packages/

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ExtensionBundleId="com.wb.copycat" ExtensionBundleName="WB CopyCat" ExtensionBundleVersion="0.1.0" Version="7.0">
+  <ExtensionList>
+    <Extension Id="com.wb.copycat.panel" Version="0.1.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="PHSP" Version="[22.0,99.0]" />
+      <Host Name="PHXS" Version="[22.0,99.0]" />
+      <Host Name="AEFT" Version="[17.0,99.0]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="7.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.wb.copycat.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/hostscript.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--enable-node-worker</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+          <StartOn>
+            <Event>com.adobe.csxs.events.ApplicationInitialized</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>WB CopyCat</Menu>
+          <Geometry>
+            <Size>
+              <Width>350</Width>
+              <Height>400</Height>
+            </Size>
+            <MinSize>
+              <Width>300</Width>
+              <Height>300</Height>
+            </MinSize>
+          </Geometry>
+          <Icons>
+            <Icon Type="Normal">./icon.png</Icon>
+            <Icon Type="RollOver">./icon.png</Icon>
+          </Icons>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

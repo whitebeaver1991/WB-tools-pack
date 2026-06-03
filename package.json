@@ -1,0 +1,40 @@
+{
+  "name": "ae-fx-manager",
+  "version": "1.0.0",
+  "description": "After Effects 2025.3 特效管理器 - 专业的特效预设管理和白板系统",
+  "main": "src/AE_FX_Manager.jsx",
+  "scripts": {
+    "install": "install.jsx",
+    "compile": "compile_jsxbin.jsx",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "after-effects",
+    "ae",
+    "jsx",
+    "jsxbin",
+    "effects",
+    "presets",
+    "motion-graphics",
+    "vfx"
+  ],
+  "author": "AE FX Manager Team",
+  "license": "MIT",
+  "ae_version": "2025.3",
+  "features": [
+    "特效预设保存与搜索",
+    "飞书风格白板系统",
+    "饼图菜单调用",
+    "滚轮菜单调用",
+    "HID Macros集成",
+    "混合存储系统"
+  ],
+  "file_structure": {
+    "src/AE_FX_Manager.jsx": "主程序，包含UI和核心功能",
+    "src/FXM_PieMenu.jsx": "饼图菜单和滚轮菜单实现",
+    "src/FXM_HotkeyHelper.jsx": "快捷键辅助和HID Macros支持",
+    "install.jsx": "自动安装脚本",
+    "compile_jsxbin.jsx": "JSXBIN编译工具",
+    "README.md": "使用说明文档"
+  }
+}

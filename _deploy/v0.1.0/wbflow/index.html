@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WB FlowBoard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="CSInterface.js"></script>
+</head>
+<body>
+    <div class="panel">
+        <div class="toolbar">
+            <button id="btnNew" class="tb-btn">New</button>
+            <button id="btnOpen" class="tb-btn">Open</button>
+            <div class="tb-dropdown" id="recentDropdown">
+                <button id="btnRecent" class="tb-btn" title="Recent files">&#9660; Recent</button>
+                <div class="tb-dropdown-menu" id="recentMenu"></div>
+            </div>
+            <button id="btnSave" class="tb-btn">Save</button>
+            <span class="tb-sep"></span>
+            <button id="btnAddStep" class="tb-btn">+ Step</button>
+            <button id="btnImportImg" class="tb-btn">Image</button>
+            <span class="tb-sep"></span>
+            <button id="btnToggleView" class="tb-btn" title="Toggle edit/overview view">Overview</button>
+            <button id="btnSettings" class="tb-btn" title="Settings">&#9881;</button>
+            <span class="tb-sep"></span>
+            <button id="btnGenerate" class="tb-btn" style="color:#4c4;" title="Generate steps from AE effects">Generate</button>
+            <span class="tb-filename" id="fileName">Untitled</span>
+        </div>
+
+        <div class="project-folder-bar" id="projectFolderBar">
+            <button id="btnBrowseFolder" class="pf-btn">Folder</button>
+            <span class="pf-path" id="projectFolderPath">(not set)</span>
+            <button id="btnScanFFX" class="pf-btn pf-btn-scan">Scan .ffx</button>
+        </div>
+
+        <div class="canvas" id="canvas"></div>
+
+        <div id="settingsPanel" style="display:none;flex-shrink:0;background:#1a1a1a;border-top:1px solid #333;padding:10px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <label style="color:#888;font-size:12px;">Language:</label>
+                <select id="selLang" style="background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:3px 6px;font-size:12px;">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                </select>
+                <label style="color:#888;font-size:12px;">Font size:</label>
+                <input id="sldFont" type="range" min="10" max="20" value="13" style="width:80px;">
+                <span id="lblFontVal" style="color:#aaa;font-size:12px;min-width:30px;">13px</span>
+                <button id="btnApplySettings" style="padding:3px 12px;background:#2a3a2a;border:1px solid #3a5a3a;color:#8c8;border-radius:3px;cursor:pointer;font-size:12px;">Apply</button>
+            </div>
+        </div>
+
+        <div class="collapsible-about">
+            <div class="collapsible-about-header collapsed" data-target="aboutBody">
+                <span class="collapse-icon">&#9660;</span>
+                <span>About</span>
+            </div>
+            <div id="aboutBody" class="collapsible-about-body collapsed" style="padding:8px;background:#1e1e1e;border-top:1px solid #383838;font-size:11px;color:#888;line-height:1.6;">
+                <div><b>WB FlowBoard</b> &mdash; Version 0.0.1</div>
+                <div>vibe coding作者: whitebeaver</div>
+                <div>本项目完全免费，由Trae与Deepseek V4.0 Flash版本生成，完全AI，绝无人工要素</div>
+            </div>
+        </div>
+
+        <div class="collapsible-hk">
+            <div class="collapsible-hk-header collapsed" data-target="hkBody">
+                <span class="collapse-icon">&#9660;</span>
+                <span>Hotkeys</span>
+            </div>
+            <div id="hkBody" class="collapsible-hk-body collapsed">
+                <div class="hotkey-bar" id="hotkeyBar">
+                    <div class="hk-row">
+                        <button id="btnSendSave" class="hk-btn" title="Execute AE Save Animation Preset">SAVE</button>
+                        <input id="hkSave" class="hk-input" type="text" placeholder="Save hotkey (^+s)" title="Stored in ExtendScript cmd cache">
+                        <button id="btnSendApply" class="hk-btn" title="Execute AE Apply Animation Preset">APPLY</button>
+                        <input id="hkApply" class="hk-input" type="text" placeholder="Apply hotkey (^+o)" title="Stored in ExtendScript cmd cache">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusBar"><span id="statusText"></span><button id="btnLock" class="lock-btn" title="编辑模式锁定/解锁">🔓</button></div>
+    </div>
+
+    <script src="js/flowboard_core.js"></script>
+    <script src="js/flowboard_helpers.js"></script>
+    <script src="js/flowboard_render.js"></script>
+    <script src="js/flowboard_edit.js"></script>
+    <script src="js/flowboard_overview.js"></script>
+    <script src="js/flowboard_main.js"></script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<HTA:APPLICATION ID="PieMenu" 
+  CAPTION="no" 
+  BORDER="none"
+  SHOWINTASKBAR="no"
+  WINDOWSTATE="normal"
+  CONTEXTMENU="no" />
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 100vw; height: 100vh;
+  background: #1a1a1a;
+  overflow: hidden;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  cursor: default;
+}
+#pieWrapper {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px; height: 100px;
+}
+.sector { cursor: pointer; }
+.sector-base { opacity: 0.85; }
+.sector.highlighted .sector-base { stroke: #ffffff; stroke-width: 3; opacity: 1; }
+.sector.highlighted + .sector-label { fill: #ffffff !important; }
+.divider { stroke: rgba(255,255,255,0.2); stroke-width: 1.5; }
+.sector-label {
+  font-size: 13px; font-weight: 600;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  pointer-events: none;
+  fill: rgba(255,255,255,0.7);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  transition: fill 0.15s;
+}
+.sector-label-dir {
+  font-size: 11px;
+  fill: rgba(255,255,255,0.3);
+}
+.center-circle {
+  fill: #1a1a1a;
+  stroke: rgba(255,255,255,0.15);
+  stroke-width: 2;
+}
+.center-text {
+  fill: rgba(255,255,255,0.8);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.center-subtext {
+  fill: rgba(255,255,255,0.35);
+  font-size: 10px;
+  text-anchor: middle;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+#hintText {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  pointer-events: none;
+  text-align: center;
+}
+#timerBar {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.2);
+  transition: none;
+}
+</style>
+</head>
+<body>
+<svg id="pieCanvas" width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background circle behind sectors -->
+  <circle id="bgCircle" cx="200" cy="200" r="165" fill="#0d0d0d" stroke="none"/>
+
+  <!-- Sector 0 (Top) -->
+  <g class="sector" id="sector0" data-sector="0">
+    <path class="sector-base" d="M200,200 L313,87 A160,160 0 0,1 313,313 Z" fill="#2a2a2a"/>
+  </g>
+  <!-- Sector 1 (Right) -->
+  <g class="sector" id="sector1" data-sector="1">
+    <path class="sector-base" d="M200,200 L313,313 A160,160 0 0,1 87,313 Z" fill="#2a2a2a"/>
+  </g>
+  <!-- Sector 2 (Bottom) -->
+  <g class="sector" id="sector2" data-sector="2">
+    <path class="sector-base" d="M200,200 L87,313 A160,160 0 0,1 87,87 Z" fill="#2a2a2a"/>
+  </g>
+  <!-- Sector 3 (Left) -->
+  <g class="sector" id="sector3" data-sector="3">
+    <path class="sector-base" d="M200,200 L87,87 A160,160 0 0,1 313,87 Z" fill="#2a2a2a"/>
+  </g>
+
+  <!-- Dividing lines (X shape) -->
+  <line class="divider" x1="200" y1="200" x2="313" y2="87"/>
+  <line class="divider" x1="200" y1="200" x2="313" y2="313"/>
+  <line class="divider" x1="200" y1="200" x2="87" y2="313"/>
+  <line class="divider" x1="200" y1="200" x2="87" y2="87"/>
+
+  <!-- Direction symbols near tips -->
+  <text class="sector-label-dir" x="200" y="68" text-anchor="middle">▲</text>
+  <text class="sector-label-dir" x="343" y="205" text-anchor="start">▶</text>
+  <text class="sector-label-dir" x="200" y="346" text-anchor="middle">▼</text>
+  <text class="sector-label-dir" x="57" y="205" text-anchor="end">◀</text>
+
+  <!-- Labels (outside circle, content set by JS) -->
+  <text class="sector-label" id="label0" x="200" y="25" text-anchor="middle">—</text>
+  <text class="sector-label" id="label1" x="373" y="210" text-anchor="end">—</text>
+  <text class="sector-label" id="label2" x="200" y="380" text-anchor="middle">—</text>
+  <text class="sector-label" id="label3" x="27" y="210" text-anchor="start">—</text>
+
+  <!-- Center -->
+  <circle class="center-circle" cx="200" cy="200" r="35"/>
+  <text class="center-text" id="pageLabel" x="200" y="195">Page 1</text>
+  <text class="center-subtext" id="pageCount" x="200" y="213">1 / 3</text>
+</svg>
+
+<div id="hintText">移动鼠标选择 · 点击确认 · 滚轮翻页 · Esc 关闭</div>
+<div id="timerBar"></div>
+
+<script>
+// ─── Config ────────────────────────────
+var TOTAL_PAGES = 3;
+var currentPage = 0;
+var highlightedSector = -1;
+var timerId = null;
+var timerAnimId = null;
+var TIMEOUT_MS = 3000;
+var tempFilePath = '';
+
+var PAGES = [
+  [
+    { name: 'Glow 辉光', match: 'ADBE Glow2' },
+    { name: 'Blur 模糊', match: 'ADBE Gaussian Blur' },
+    { name: 'Shadow 阴影', match: 'ADBE Drop Shadow' },
+    { name: 'Bevel 浮雕', match: 'ADBE Bevel Alpha' }
+  ],
+  [
+    { name: 'Wave 波浪', match: 'ADBE Wave Warp' },
+    { name: 'Bulge 膨胀', match: 'ADBE Bulge' },
+    { name: 'Mosaic 马赛克', match: 'ADBE Mosaic' },
+    { name: 'Noise 噪点', match: 'ADBE Noise' }
+  ],
+  [
+    { name: 'Edge 边缘', match: 'ADBE Find Edges' },
+    { name: 'Fast Blur 快速模糊', match: 'ADBE Fast Blur' },
+    { name: 'Channel Blur 通道模糊', match: 'ADBE Channel Blur' },
+    { name: 'Turbulent Displace 置换', match: 'ADBE Turbulent Displace' }
+  ]
+];
+
+function initTempPath() {
+  try {
+    var shell = new ActiveXObject('WScript.Shell');
+    tempFilePath = shell.ExpandEnvironmentStrings('%TEMP%') + '\\wb_pie_selection.json';
+  } catch(e) {
+    tempFilePath = 'C:\\Users\\Public\\wb_pie_selection.json';
+  }
+}
+
+function getPageItems(page) {
+  return PAGES[page] || [];
+}
+
+function updatePage(page) {
+  highlightedSector = -1;
+  var items = getPageItems(page);
+
+  for (var i = 0; i < 4; i++) {
+    var label = document.getElementById('label' + i);
+    var g = document.getElementById('sector' + i);
+    var base = g.querySelector('.sector-base');
+
+    if (i < items.length) {
+      label.textContent = items[i].name;
+      label.setAttribute('fill', 'rgba(255,255,255,0.7)');
+      g.style.opacity = '1';
+      g.style.pointerEvents = 'auto';
+    } else {
+      label.textContent = '—';
+      label.setAttribute('fill', 'rgba(255,255,255,0.15)');
+      g.style.opacity = '0.3';
+      g.style.pointerEvents = 'none';
+    }
+    g.classList.remove('highlighted');
+    base.setAttribute('stroke', 'none');
+  }
+
+  document.getElementById('pageLabel').textContent = 'Page ' + (page + 1);
+  document.getElementById('pageCount').textContent = (page + 1) + ' / ' + TOTAL_PAGES;
+
+  resetTimer();
+}
+
+function getSvgCenter() {
+  var svg = document.getElementById('pieCanvas');
+  var rect = svg.getBoundingClientRect();
+  var scaleX = rect.width / 400;
+  var scaleY = rect.height / 400;
+  var cx = rect.left + 200 * scaleX;
+  var cy = rect.top + 200 * scaleY;
+  return { cx: cx, cy: cy, scaleX: scaleX, scaleY: scaleY };
+}
+
+function handleMouseMove(e) {
+  var center = getSvgCenter();
+  var dx = e.clientX - center.cx;
+  var dy = e.clientY - center.cy;
+
+  var deadZone = 20;
+  if (Math.abs(dx) < deadZone && Math.abs(dy) < deadZone) {
+    clearHighlight();
+    return;
+  }
+
+  var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  var sector;
+  if (angle >= -135 && angle < -45) sector = 0;
+  else if (angle >= -45 && angle < 45) sector = 1;
+  else if (angle >= 45 && angle < 135) sector = 2;
+  else sector = 3;
+
+  var items = getPageItems(currentPage);
+  if (sector >= items.length) {
+    clearHighlight();
+    return;
+  }
+
+  if (sector !== highlightedSector) {
+    clearHighlight();
+    highlightedSector = sector;
+    var g = document.getElementById('sector' + sector);
+    if (g) {
+      g.classList.add('highlighted');
+      var base = g.querySelector('.sector-base');
+      if (base) base.setAttribute('stroke', '#ffffff');
+      // Brighten label
+      var lbl = document.getElementById('label' + sector);
+      if (lbl) lbl.setAttribute('fill', '#ffffff');
+    }
+    resetTimer();
+  }
+}
+
+function clearHighlight() {
+  if (highlightedSector >= 0) {
+    var old = document.getElementById('sector' + highlightedSector);
+    if (old) {
+      old.classList.remove('highlighted');
+      var base = old.querySelector('.sector-base');
+      if (base) base.setAttribute('stroke', 'none');
+      // Restore label
+      var lbl = document.getElementById('label' + highlightedSector);
+      if (lbl) lbl.setAttribute('fill', 'rgba(255,255,255,0.7)');
+    }
+  }
+  highlightedSector = -1;
+}
+
+function handleClick(e) {
+  if (highlightedSector < 0) return;
+  var items = getPageItems(currentPage);
+  if (highlightedSector >= items.length) return;
+  doConfirm(items[highlightedSector]);
+}
+
+function handleWheel(e) {
+  if (e.deltaX !== 0) {
+    e.preventDefault();
+    if (e.deltaX > 0 && currentPage < TOTAL_PAGES - 1) {
+      clearHighlight();
+      currentPage++;
+      updatePage(currentPage);
+    } else if (e.deltaX < 0 && currentPage > 0) {
+      clearHighlight();
+      currentPage--;
+      updatePage(currentPage);
+    }
+  }
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Escape') {
+    closeMenu();
+    return;
+  }
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (highlightedSector >= 0) {
+      var items = getPageItems(currentPage);
+      if (highlightedSector < items.length) {
+        doConfirm(items[highlightedSector]);
+      }
+    }
+  }
+}
+
+function doConfirm(item) {
+  try {
+    var fso = new ActiveXObject('Scripting.FileSystemObject');
+    var file = fso.CreateTextFile(tempFilePath, true);
+    file.Write(JSON.stringify({
+      action: 'applyPreset',
+      name: item.name,
+      match: item.match
+    }));
+    file.Close();
+  } catch(e) {
+    try { window.clipboardData.setData('text', item.name); } catch(ex) {}
+  }
+  closeMenu();
+}
+
+function closeMenu() {
+  if (timerId) { clearTimeout(timerId); timerId = null; }
+  if (timerAnimId) { clearInterval(timerAnimId); timerAnimId = null; }
+  timerBar.style.width = '100%';
+  try { window.close(); } catch(e) { }
+}
+
+function resetTimer() {
+  if (timerId) { clearTimeout(timerId); timerId = null; }
+  if (timerAnimId) { clearInterval(timerAnimId); timerAnimId = null; }
+  timerBar.style.width = '100%';
+  var startTime = new Date().getTime();
+  timerAnimId = setInterval(function() {
+    var elapsed = new Date().getTime() - startTime;
+    var remaining = Math.max(0, 1 - elapsed / TIMEOUT_MS);
+    timerBar.style.width = (remaining * 100) + '%';
+    if (remaining <= 0) {
+      clearInterval(timerAnimId);
+      timerAnimId = null;
+    }
+  }, 30);
+  timerId = setTimeout(function() {
+    closeMenu();
+  }, TIMEOUT_MS);
+}
+
+function init() {
+  initTempPath();
+  updatePage(0);
+
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('click', handleClick);
+  document.addEventListener('wheel', handleWheel, { passive: false });
+  document.addEventListener('keydown', handleKeyDown);
+
+  resetTimer();
+}
+
+init();
+</script>
+</body>
+</html>

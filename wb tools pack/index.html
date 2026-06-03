@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AE FX Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="top-bar">
+      <span class="title">wb tools pack</span>
+      <div class="top-actions">
+        <button class="btn top-btn" onclick="showPieMenu()" title="Pie Menu (Ctrl+Shift+1)">●</button>
+        <button class="btn top-btn" onclick="showWheelMenu()" title="Wheel Menu (Ctrl+Shift+2)">◆</button>
+        <button class="btn top-btn" onclick="showQuickMenu()" title="Quick Menu (Ctrl+Shift+3)">◈</button>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="presets" onclick="switchTab('presets')">
+        🎨 预设
+        <span class="badge" id="presetCount" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn" data-tab="boards" onclick="switchTab('boards')">
+        📋 白板
+        <span class="badge" id="boardCount" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+        ⚙ 设置
+      </button>
+    </div>
+
+    <div class="content">
+      <div class="tab-panel active" id="panelPresets">
+        <div class="action-bar">
+          <button class="btn primary" onclick="showPieMenu()">● Pie</button>
+          <button class="btn" onclick="showWheelMenu()">◆ Wheel</button>
+          <button class="btn" onclick="showQuickMenu()">◈ Quick</button>
+          <button class="btn" onclick="savePreset()" title="从选中图层保存预设">💾 保存</button>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="搜索预设..." oninput="searchPresets()">
+          <button class="clear-btn" onclick="clearSearch()">✕</button>
+        </div>
+        <div class="preset-grid" id="presetGrid">
+          <div style="text-align:center;padding:40px 20px;color:#666;font-size:13px;">正在加载...</div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panelBoards">
+        <div class="action-bar">
+          <button class="btn" onclick="createBoard()">＋ 新建白板</button>
+          <button class="btn danger" onclick="deleteCurrentBoard()">🗑 删除</button>
+        </div>
+        <div class="board-tabs" id="boardTabs"></div>
+        <div id="boardContent"></div>
+      </div>
+
+      <div class="tab-panel" id="panelSettings">
+        <div class="settings-section">
+          <h3>关于</h3>
+          <div class="settings-row">
+            <label>名称</label>
+            <span class="value">wb tools pack</span>
+          </div>
+          <div class="settings-row">
+            <label>版本</label>
+            <span class="value">1.1.0 (CEP)</span>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>快捷键</h3>
+          <div class="settings-row">
+            <label>Pie Menu (圆形方向)</label>
+            <span class="value">Ctrl + Shift + 1</span>
+          </div>
+          <div class="settings-row">
+            <label>Wheel Menu (滚轮列表)</label>
+            <span class="value">Ctrl + Shift + 2</span>
+          </div>
+          <div class="settings-row">
+            <label>Quick Menu (快速搜索)</label>
+            <span class="value">Ctrl + Shift + 3</span>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>操作</h3>
+          <div class="action-bar">
+            <button class="btn" onclick="createTestPresets()">生成测试预设</button>
+            <button class="btn" onclick="ensureFloatingBar()">显示浮动栏</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="CSInterface.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
