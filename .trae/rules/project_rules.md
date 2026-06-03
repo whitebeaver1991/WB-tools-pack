@@ -1,8 +1,8 @@
 # WB Tools 项目规则
 
 ## 版本号
-- **当前版本**: v0.1.1
-- **PieMenu AEGP**: v1.01 (PiPL 257 = 0x101)
+- **当前版本**: v0.1.2
+- **PieMenu AEGP**: v1.02 (PiPL 258 = 0x102)
 - **FlowBoard**: v0.1.0 (无独立版本号)
 - **WB Effect Dumper**: v3.0.1 (PiPL 196609)
 
@@ -65,6 +65,14 @@ PiPL 版本号直接在 `WB_EffectDumper_PiPL.rc` 中修改低字：
   - numpad_enter_action=1→Quick/2→Wheel/3→Pie/4→Infinite
   - ShowMenu() 内强制 g_selectMode=0（点击模式）
   - 新增 AE 菜单命令 "List Numpad Devices" 用于枚举所有键盘设备
+- **v0.1.2 新增**：Quick Menu 小键盘网格布局 + 自定义背景图
+  - Quick Menu 新增 g_quickStyle: 0=旧版竖排列表，1=numpad网格(3x4)
+  - 网格布局: 7/8/9,4/5/6,1/2/3,0(宽)/. — 共11个格位
+  - 每格显示 PNG 图标 + 文本标签
+  - 外接小键盘数字键直接映射网格位置（7→格0, 8→格1...）
+  - 小键盘 +/- 翻页
+  - Pie/Infinite/Quick/Wheel 均支持自定义背景图（*_bg_path 设置）
+  - 背景图拉伸至菜单窗口大小，环/盘作为前景叠加
 
 ## Git 操作
 - 非用户要求不得自动 commit / tag / push
@@ -114,6 +122,11 @@ numpad_enter_action=1       (1=Quick, 2=Wheel, 3=Pie, 4=Infinite, 0=关)
 numpad_device_path=\\?\HID#... (持久设备路径，可选)
 numpad_handle=0x...         (运行时自动配置，不需要手动改)
 numpad_name=                (保留字段)
+quick_style=0               (0=竖排列表, 1=numpad网格)
+pie_bg_path=                (Pie菜单背景图路径)
+quick_bg_path=              (Quick菜单背景图路径)
+wheel_bg_path=              (Wheel菜单背景图路径)
+infinite_bg_path=           (Infinite菜单背景图路径)
 ```
 
 ### JS 源文件（CEP/WB_PieMenu_Panel/js/）

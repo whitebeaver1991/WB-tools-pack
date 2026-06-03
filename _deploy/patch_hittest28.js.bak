@@ -1,0 +1,369 @@
+var fs = require('fs');
+
+// ═══════════════════════════════════════════════════
+// hittest28: Per-Menu Independent Settings
+// ═══════════════════════════════════════════════════
+
+// ── Helper: safe replace ──
+function replaceAll(str, find, replace) {
+    var idx = -1;
+    while ((idx = str.indexOf(find)) >= 0) str = str.substring(0, idx) + replace + str.substring(idx + find.length);
+    return str;
+}
+
+// ===== 1. C++ =====================================================================
+var cppFile = 'C:/AE_FX_Panel/AE_FX_Manager (1)/AE_FX_Manager/WB_PieMenu_Official/WB_PieMenu.cpp';
+var cpp = fs.readFileSync(cppFile, 'utf8');
+
+// 1a. Convert single globals to arrays (keep winAlpha global)
+var globalsMap = {
+    'static int   g_bgAlpha = 60;':       'static int   g_bgAlpha[4] = {60,60,60,60};',
+    'static int   g_bgColor = 0x2A2A2A;': 'static int   g_bgColor[4] = {0x2A2A2A,0x2A2A2A,0x2A2A2A,0x2A2A2A};',
+    'static int   g_glowColor = 0x3CB93C;':'static int   g_glowColor[4] = {0x3CB93C,0x3CB93C,0x3CB93C,0x3CB93C};',
+    'static int   g_pageColor = 0x78787D;':'static int   g_pageColor[4] = {0x78787D,0x78787D,0x78787D,0x78787D};',
+    'static int   g_glowIntensity = 100;': 'static int   g_glowIntensity[4] = {100,100,100,100};',
+    'static int   g_imgDist = 45;':        'static int   g_imgDist[4] = {45,45,45,45};',
+    'static int   g_textDist = 85;':       'static int   g_textDist[4] = {85,85,85,85};',
+    'static int   g_menuScale = 100;':     'static int   g_menuScale[4] = {100,100,100,100};',
+    'static int   g_textSize = 100;':      'static int   g_textSize[4] = {100,100,100,100};',
+};
+for (var oldG in globalsMap) cpp = replaceAll(cpp, oldG, globalsMap[oldG]);
+
+// 1b. Update SetVal() — per-menu prefix keys + backward compat old keys
+var oldSetVals = [
+    '    else if (strcmp(key, "bg_alpha") == 0) { int n = atoi(val); if (n >= 0 && n <= 100) g_bgAlpha = n; return; }',
+    '    else if (strcmp(key, "bg_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_bgColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }',
+    '    else if (strcmp(key, "glow_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_glowColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }',
+    '    else if (strcmp(key, "glow_intensity") == 0) { int n = atoi(val); if (n >= 0 && n <= 200) g_glowIntensity = n; return; }',
+    '    else if (strcmp(key, "page_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; g_pageColor = RGB(cr,cg,cb) & 0xFFFFFF; } return; }',
+    '    else if (strcmp(key, "img_dist") == 0) { int n = atoi(val); if (n >= 20 && n <= 80) g_imgDist = n; return; }',
+    '    else if (strcmp(key, "text_dist") == 0) { int n = atoi(val); if (n >= 30 && n <= 90) g_textDist = n; return; }',
+    '    else if (strcmp(key, "text_size") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_textSize = n; return; }',
+    '    else if (strcmp(key, "menu_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_menuScale = n; return; }',
+];
+
+function menuPrefixSetter(key, arr, min, max, extra) {
+    var lines = [];
+    var menuNames = ['pie','quick','wheel','infinite'];
+    for (var mi = 0; mi < 4; mi++) {
+        if (extra === 'color') {
+            lines.push('    else if (strcmp(key, "' + menuNames[mi] + '_' + key + '") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; ' + arr + '[' + mi + '] = RGB(cr,cg,cb) & 0xFFFFFF; } return; }');
+        } else {
+            lines.push('    else if (strcmp(key, "' + menuNames[mi] + '_' + key + '") == 0) { int n = atoi(val); if (n >= ' + min + ' && n <= ' + max + ') ' + arr + '[' + mi + '] = n; return; }');
+        }
+    }
+    // Backward compat: old key sets all 4
+    if (extra === 'color') {
+        lines.push('    else if (strcmp(key, "' + key + '") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { int cr=(c>>16)&0xFF,cg=(c>>8)&0xFF,cb=c&0xFF; COLORREF v = RGB(cr,cg,cb) & 0xFFFFFF; for (int z=0;z<4;z++) ' + arr + '[z] = v; } return; }');
+    } else {
+        lines.push('    else if (strcmp(key, "' + key + '") == 0) { int n = atoi(val); if (n >= ' + min + ' && n <= ' + max + ') { for (int z=0;z<4;z++) ' + arr + '[z] = n; } return; }');
+    }
+    return lines.join('\n');
+}
+
+var newSetVals = [
+    menuPrefixSetter('bg_alpha', 'g_bgAlpha', 0, 100, 'int'),
+    menuPrefixSetter('bg_color', 'g_bgColor', 0, 0, 'color'),
+    menuPrefixSetter('glow_color', 'g_glowColor', 0, 0, 'color'),
+    menuPrefixSetter('glow_intensity', 'g_glowIntensity', 0, 200, 'int'),
+    menuPrefixSetter('page_color', 'g_pageColor', 0, 0, 'color'),
+    menuPrefixSetter('img_dist', 'g_imgDist', 20, 80, 'int'),
+    menuPrefixSetter('text_dist', 'g_textDist', 30, 90, 'int'),
+    menuPrefixSetter('text_size', 'g_textSize', 50, 150, 'int'),
+    menuPrefixSetter('menu_scale', 'g_menuScale', 50, 150, 'int'),
+];
+
+// Apply SetVal replacements
+for (var sv = 0; sv < oldSetVals.length; sv++) {
+    cpp = cpp.replace(oldSetVals[sv], newSetVals[sv]);
+}
+
+// 1c. Find and replace all variable references with [g_menuType] indexing
+// These are the usage sites (NOT declarations, NOT initializations in LoadSettings)
+var varRefs = ['g_bgAlpha','g_bgColor','g_glowColor','g_pageColor','g_glowIntensity',
+               'g_imgDist','g_textDist','g_menuScale','g_textSize'];
+
+varRefs.forEach(function(v) {
+    // Pattern: look for v followed by =, <, >, +, -, *, /, %, ), ,, ;, space, tab, newline
+    // But NOT if followed by = at the declaration site (e.g. "g_bgAlpha[4] =")
+    // and NOT inside SetVal where we just replaced them
+    
+    // Simple approach: replace all occurrences EXCEPT:
+    // - Inside the array declaration (e.g. "g_bgAlpha[4] = {")
+    // - Inside the SetVal we already processed
+    // We'll do this by replacing VARNAME with VARNAME[g_menuType]
+    
+    // But only in the body of functions, not in declarations or SetVal
+    // Actually let's be smarter. Replace all instances of "v " with "v[g_menuType] "
+    // and "v;" with "v[g_menuType];" and "v)" with "v[g_menuType])" etc
+    
+    // Actually the simplest: replace "varname" followed by non-alphanumeric, but NOT "["
+    var strLen = v.length;
+    for (var ci = 0; ci < cpp.length - strLen; ci++) {
+        if (cpp.substring(ci, ci + strLen) === v) {
+            var next = cpp[ci + strLen];
+            // Skip if: inside declaration, inside SetVal comment, or already indexed
+            if (next === '[') continue;
+            if (next >= 'a' && next <= 'z') continue;
+            if (next >= 'A' && next <= 'Z') continue;
+            if (next >= '0' && next <= '9') continue;
+            if (next === '_') continue;
+            // Check it's not inside a declaration line
+            var lineStart = cpp.lastIndexOf('\n', ci);
+            var line = cpp.substring(lineStart, cpp.indexOf('\n', ci + 1));
+            if (line.indexOf('static') >= 0 && line.indexOf('=') > line.indexOf(v)) continue;
+            // Replace
+            cpp = cpp.substring(0, ci + strLen) + '[g_menuType]' + cpp.substring(ci + strLen);
+            ci += strLen + 11; // skip past inserted chars
+        }
+    }
+});
+
+// 1d. WriteGlobals function (the part after WriteInfiniteSection that writes globals)
+// Replace the write lines in SaveSettings function
+var writeGlobalsOld = [
+    '    fprintf(f, "win_alpha=%d\\n", g_winAlpha);',
+    '    fprintf(f, "bg_alpha=%d\\n", g_bgAlpha);',
+    '    fprintf(f, "bg_color=%02x%02x%02x\\n", GetRValue(g_bgColor), GetGValue(g_bgColor), GetBValue(g_bgColor));',
+    '    fprintf(f, "glow_color=%02x%02x%02x\\n", GetRValue(g_glowColor), GetGValue(g_glowColor), GetBValue(g_glowColor));',
+    '    fprintf(f, "glow_intensity=%d\\n", g_glowIntensity);',
+    '    fprintf(f, "page_color=%02x%02x%02x\\n", GetRValue(g_pageColor), GetGValue(g_pageColor), GetBValue(g_pageColor));',
+    '    fprintf(f, "img_dist=%d\\n", g_imgDist);',
+    '    fprintf(f, "text_dist=%d\\n", g_textDist);',
+    '    fprintf(f, "text_size=%d\\n", g_textSize);',
+    '    fprintf(f, "menu_scale=%d\\n", g_menuScale);',
+];
+
+var menuNames = ['pie','quick','wheel','infinite'];
+var writeGlobalsNew = [
+    '    fprintf(f, "win_alpha=%d\\n", g_winAlpha);',
+];
+for (var mi = 0; mi < 4; mi++) {
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_bg_alpha=%d\\n", g_bgAlpha[' + mi + ']);');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_bg_color=%02x%02x%02x\\n", GetRValue(g_bgColor[' + mi + ']), GetGValue(g_bgColor[' + mi + ']), GetBValue(g_bgColor[' + mi + ']));');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_glow_color=%02x%02x%02x\\n", GetRValue(g_glowColor[' + mi + ']), GetGValue(g_glowColor[' + mi + ']), GetBValue(g_glowColor[' + mi + ']));');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_glow_intensity=%d\\n", g_glowIntensity[' + mi + ']);');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_page_color=%02x%02x%02x\\n", GetRValue(g_pageColor[' + mi + ']), GetGValue(g_pageColor[' + mi + ']), GetBValue(g_pageColor[' + mi + ']));');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_img_dist=%d\\n", g_imgDist[' + mi + ']);');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_text_dist=%d\\n", g_textDist[' + mi + ']);');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_text_size=%d\\n", g_textSize[' + mi + ']);');
+    writeGlobalsNew.push('    fprintf(f, "' + menuNames[mi] + '_menu_scale=%d\\n", g_menuScale[' + mi + ']);');
+}
+
+for (var wi = 0; wi < writeGlobalsOld.length; wi++) {
+    cpp = cpp.replace(writeGlobalsOld[wi], writeGlobalsNew[wi]);
+}
+
+// 1e. Update DM_SETTING line that sends values to AE — replace with per-menu
+var dmSettingOld = '    SendMessage(g_hwnd, DM_SETTING, (WPARAM)("bg_alpha=" + std::to_string(g_bgAlpha)).c_str(), 0);';
+var dmSettingNew = '    SendMessage(g_hwnd, DM_SETTING, (WPARAM)("' + menuNames[0] + '_bg_alpha=" + std::to_string(g_bgAlpha[0]) + "|' + menuNames[1] + '_bg_alpha=" + std::to_string(g_bgAlpha[1]) + "|' + menuNames[2] + '_bg_alpha=" + std::to_string(g_bgAlpha[2]) + "|' + menuNames[3] + '_bg_alpha=" + std::to_string(g_bgAlpha[3])).c_str(), 0);';
+cpp = replaceAll(cpp, dmSettingOld, dmSettingNew);
+
+// Update the menu_scale DM_SETTING too
+var scaleOld = '    SendMessage(g_hwnd, DM_SETTING, (WPARAM)("menu_scale=" + std::to_string(g_menuScale)).c_str(), 0);';
+var scaleNew = '    SendMessage(g_hwnd, DM_SETTING, (WPARAM)("pie_menu_scale=" + std::to_string(g_menuScale[0]) + "|quick_menu_scale=" + std::to_string(g_menuScale[1]) + "|wheel_menu_scale=" + std::to_string(g_menuScale[2]) + "|infinite_menu_scale=" + std::to_string(g_menuScale[3])).c_str(), 0);';
+cpp = replaceAll(cpp, scaleOld, scaleNew);
+
+fs.writeFileSync(cppFile, cpp, 'utf8');
+console.log('C++ done');
+
+// ===== 2. JS =====================================================================
+var jsFile = 'C:/AE_FX_Panel/AE_FX_Manager (1)/AE_FX_Manager/WB_PieMenu_Official/CEP/WB_PieMenu_Panel/js/index.js';
+var js = fs.readFileSync(jsFile, 'utf8');
+
+// 2a. Convert global vars to arrays
+var jsGlobalsMap = {
+    'var bgAlpha = 60': 'var bgAlpha = [60,60,60,60]',
+    "var bgColor = '2a2a2a'": "var bgColor = ['2a2a2a','2a2a2a','2a2a2a','2a2a2a']",
+    "var glowColor = '3cb93c'": "var glowColor = ['3cb93c','3cb93c','3cb93c','3cb93c']",
+    'var glowIntensity = 100': 'var glowIntensity = [100,100,100,100]',
+    "var pageColor = '78787d'": "var pageColor = ['78787d','78787d','78787d','78787d']",
+    'var imgDist = 45': 'var imgDist = [45,45,45,45]',
+    'var textDist = 85': 'var textDist = [85,85,85,85]',
+    'var textSize = 100': 'var textSize = [100,100,100,100]',
+    'var uiZoom = 100': 'var uiZoom = [100,100,100,100]',
+    'var menuScale = 100': 'var menuScale = [100,100,100,100]',
+};
+for (var oldJ in jsGlobalsMap) js = replaceAll(js, oldJ, jsGlobalsMap[oldJ]);
+
+// 2b. Replace JS var references with [curMenu] indexing
+// For each variable, find and replace VARNAME with VARNAME[curMenu]
+// But skip: the declaration itself, and index definitions like "var VARNAME = ["
+
+var jsVarRefs = ['bgAlpha','bgColor','glowColor','glowIntensity','pageColor',
+                 'imgDist','textDist','textSize','uiZoom','menuScale'];
+
+jsVarRefs.forEach(function(v) {
+    var strLen = v.length;
+    var result = '';
+    var i = 0;
+    while (i < js.length) {
+        // Check for match at position i
+        if (js.substring(i, i + strLen) === v && i + strLen < js.length) {
+            var next = js[i + strLen];
+            var prev = i > 0 ? js[i - 1] : ' ';
+            // Skip declaration: "var v =" or "var v = ["
+            if (prev === ' ' && js.substring(i - 4, i) === 'var ') {
+                result += v;
+                i += strLen;
+                continue;
+            }
+            // Skip if already indexed, or followed by alpha/num/_
+            if (next === '[' || next === '_') {
+                result += v;
+                i += strLen;
+                continue;
+            }
+            if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9')) {
+                result += v;
+                i += strLen;
+                continue;
+            }
+            // Check it's not a usage like "v = value" vs "var v = value"
+            // In JS, all non-var declarations are referencing
+            result += v + '[curMenu]';
+            i += strLen;
+        } else {
+            result += js[i];
+            i++;
+        }
+    }
+    js = result;
+});
+
+// 2c. Update saveSettings() — write per-menu keys instead of global keys
+var oldSaveLines = {
+    "'bg_color=' + bgColor": "'pie_bg_color=' + bgColor[0] + '\\nquick_bg_color=' + bgColor[1] + '\\nwheel_bg_color=' + bgColor[2] + '\\ninfinite_bg_color=' + bgColor[3]",
+    "'glow_color=' + glowColor": "'pie_glow_color=' + glowColor[0] + '\\nquick_glow_color=' + glowColor[1] + '\\nwheel_glow_color=' + glowColor[2] + '\\ninfinite_glow_color=' + glowColor[3]",
+    "'glow_intensity=' + glowIntensity": "'pie_glow_intensity=' + glowIntensity[0] + '\\nquick_glow_intensity=' + glowIntensity[1] + '\\nwheel_glow_intensity=' + glowIntensity[2] + '\\ninfinite_glow_intensity=' + glowIntensity[3]",
+    "'page_color=' + pageColor": "'pie_page_color=' + pageColor[0] + '\\nquick_page_color=' + pageColor[1] + '\\nwheel_page_color=' + pageColor[2] + '\\ninfinite_page_color=' + pageColor[3]",
+    "'img_dist=' + imgDist": "'pie_img_dist=' + imgDist[0] + '\\nquick_img_dist=' + imgDist[1] + '\\nwheel_img_dist=' + imgDist[2] + '\\ninfinite_img_dist=' + imgDist[3]",
+    "'text_dist=' + textDist": "'pie_text_dist=' + textDist[0] + '\\nquick_text_dist=' + textDist[1] + '\\nwheel_text_dist=' + textDist[2] + '\\ninfinite_text_dist=' + textDist[3]",
+    "'text_size=' + textSize": "'pie_text_size=' + textSize[0] + '\\nquick_text_size=' + textSize[1] + '\\nwheel_text_size=' + textSize[2] + '\\ninfinite_text_size=' + textSize[3]",
+    "'menu_scale=' + menuScale": "'pie_menu_scale=' + menuScale[0] + '\\nquick_menu_scale=' + menuScale[1] + '\\nwheel_menu_scale=' + menuScale[2] + '\\ninfinite_menu_scale=' + menuScale[3]",
+    "'ui_zoom=' + uiZoom": "'pie_ui_zoom=' + uiZoom[0] + '\\nquick_ui_zoom=' + uiZoom[1] + '\\nwheel_ui_zoom=' + uiZoom[2] + '\\ninfinite_ui_zoom=' + uiZoom[3]",
+    "'bg_alpha=' + bgAlpha": "'pie_bg_alpha=' + bgAlpha[0] + '\\nquick_bg_alpha=' + bgAlpha[1] + '\\nwheel_bg_alpha=' + bgAlpha[2] + '\\ninfinite_bg_alpha=' + bgAlpha[3]",
+};
+
+// Need to be careful with replacement order - do bg_alpha last since others contain "bg_"
+var saveOrder = [
+    "'bg_alpha=", "'glow_intensity=", "'page_color=", "'img_dist=", "'text_dist=", "'text_size=", "'menu_scale=", "'ui_zoom=", "'glow_color=", "'bg_color="
+];
+
+for (var si = 0; si < saveOrder.length; si++) {
+    var key = saveOrder[si];
+    // Find the match in the saveSettings line
+    for (var oldS in oldSaveLines) {
+        if (oldS.indexOf(key) >= 0 && js.indexOf(oldS) >= 0) {
+            js = replaceAll(js, oldS, oldSaveLines[oldS]);
+            break;
+        }
+    }
+}
+
+// 2d. Update parseSettings() — read per-menu keys with fallback to old keys
+// Insert new parsing code after the old bg_alpha/bg_color etc lines
+var parseOldCode = [
+    "    if (parsed['bg_alpha']) bgAlpha = parseInt(parsed['bg_alpha']) || 60;",
+    "    if (parsed['bg_color']) bgColor = parsed['bg_color'];",
+    "    if (parsed['glow_color']) glowColor = parsed['glow_color'];",
+    "    if (parsed['glow_intensity']) glowIntensity = parseInt(parsed['glow_intensity']) || 100;",
+    "    if (parsed['page_color']) pageColor = parsed['page_color'];",
+    "    if (parsed['img_dist']) imgDist = parseInt(parsed['img_dist']) || 45;",
+    "    if (parsed['text_dist']) textDist = parseInt(parsed['text_dist']) || 85;",
+    "    if (parsed['text_size']) textSize = parseInt(parsed['text_size']) || 100;",
+    "    if (parsed['ui_zoom']) uiZoom = parseInt(parsed['ui_zoom']) || 100;",
+    "    if (parsed['menu_scale']) menuScale = parseInt(parsed['menu_scale']) || 100;",
+];
+
+function genParseCode(key, arr, type) {
+    var lines = [];
+    var menus = ['pie','quick','wheel','infinite'];
+    for (var mi = 0; mi < 4; mi++) {
+        var mKey = "'" + menus[mi] + '_' + key + "'";
+        if (type === 'color') {
+            lines.push("    if (parsed[" + mKey + "]) " + arr + "[" + mi + "] = parsed[" + mKey + "];");
+        } else if (type === 'int') {
+            lines.push("    if (parsed[" + mKey + "]) " + arr + "[" + mi + "] = parseInt(parsed[" + mKey + "]) || 100;");
+        } else if (type === 'bool') {
+            lines.push("    if (parsed[" + mKey + "]) " + arr + "[" + mi + "] = parsed[" + mKey + "] === '1';");
+        }
+    }
+    // Fallback: old key sets all 4
+    if (type === 'color') {
+        lines.push("    if (parsed['" + key + "']) { var v = parsed['" + key + "']; for (var zm=0;zm<4;zm++) " + arr + "[zm] = v; }");
+    } else if (type === 'int') {
+        lines.push("    if (parsed['" + key + "']) { var v = parseInt(parsed['" + key + "']) || 100; for (var zm=0;zm<4;zm++) " + arr + "[zm] = v; }");
+    } else if (type === 'bool') {
+        lines.push("    if (parsed['" + key + "']) { var v = parsed['" + key + "'] === '1'; for (var zm=0;zm<4;zm++) " + arr + "[zm] = v; }");
+    }
+    return lines.join('\n');
+}
+
+var newParseCode = [
+    genParseCode('bg_alpha', 'bgAlpha', 'int'),
+    genParseCode('bg_color', 'bgColor', 'color'),
+    genParseCode('glow_color', 'glowColor', 'color'),
+    genParseCode('glow_intensity', 'glowIntensity', 'int'),
+    genParseCode('page_color', 'pageColor', 'color'),
+    genParseCode('img_dist', 'imgDist', 'int'),
+    genParseCode('text_dist', 'textDist', 'int'),
+    genParseCode('text_size', 'textSize', 'int'),
+    genParseCode('ui_zoom', 'uiZoom', 'int'),
+    genParseCode('menu_scale', 'menuScale', 'int'),
+];
+
+for (var pi = 0; pi < parseOldCode.length; pi++) {
+    js = js.replace(parseOldCode[pi], newParseCode[pi]);
+}
+
+// 2e. Update collectFromUI — read per-menu values from controls
+// The controls are already per-menu (we add [curMenu] indexing)
+// But we need to update the slider values in the settings panel
+// The sliders currently read/write the global variable directly
+// With [curMenu] indexing they'll automatically work for the current menu
+
+// Update updateGlobals — push per-menu values to C++
+var oldGlobals = [
+    "    cs.evalScript(\"writeSettings('img_dist=\" + imgDist + \"')\");",
+    "    cs.evalScript(\"writeSettings('text_dist=\" + textDist + \"')\");",
+    "    cs.evalScript(\"writeSettings('text_size=\" + textSize + \"')\");",
+    "    cs.evalScript(\"writeSettings('bg_alpha=\" + bgAlpha + \"')\");",
+    "    cs.evalScript(\"writeSettings('bg_color=\" + bgColor + \"')\");",
+    "    cs.evalScript(\"writeSettings('glow_color=\" + glowColor + \"')\");",
+    "    cs.evalScript(\"writeSettings('glow_intensity=\" + glowIntensity + \"')\");",
+    "    cs.evalScript(\"writeSettings('page_color=\" + pageColor + \"')\");",
+];
+var newGlobals = [
+    "    cs.evalScript(\"writeSettings('pie_img_dist=\" + imgDist[0] + \"|quick_img_dist=\" + imgDist[1] + \"|wheel_img_dist=\" + imgDist[2] + \"|infinite_img_dist=\" + imgDist[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_text_dist=\" + textDist[0] + \"|quick_text_dist=\" + textDist[1] + \"|wheel_text_dist=\" + textDist[2] + \"|infinite_text_dist=\" + textDist[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_text_size=\" + textSize[0] + \"|quick_text_size=\" + textSize[1] + \"|wheel_text_size=\" + textSize[2] + \"|infinite_text_size=\" + textSize[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_bg_alpha=\" + bgAlpha[0] + \"|quick_bg_alpha=\" + bgAlpha[1] + \"|wheel_bg_alpha=\" + bgAlpha[2] + \"|infinite_bg_alpha=\" + bgAlpha[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_bg_color=\" + bgColor[0] + \"|quick_bg_color=\" + bgColor[1] + \"|wheel_bg_color=\" + bgColor[2] + \"|infinite_bg_color=\" + bgColor[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_glow_color=\" + glowColor[0] + \"|quick_glow_color=\" + glowColor[1] + \"|wheel_glow_color=\" + glowColor[2] + \"|infinite_glow_color=\" + glowColor[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_glow_intensity=\" + glowIntensity[0] + \"|quick_glow_intensity=\" + glowIntensity[1] + \"|wheel_glow_intensity=\" + glowIntensity[2] + \"|infinite_glow_intensity=\" + glowIntensity[3] + \"')\");",
+    "    cs.evalScript(\"writeSettings('pie_page_color=\" + pageColor[0] + \"|quick_page_color=\" + pageColor[1] + \"|wheel_page_color=\" + pageColor[2] + \"|infinite_page_color=\" + pageColor[3] + \"')\");",
+];
+for (var gi = 0; gi < oldGlobals.length; gi++) {
+    js = replaceAll(js, oldGlobals[gi], newGlobals[gi]);
+}
+
+// 2f. Add per-menu labels to HTML controls — mark which menu's values are shown
+// Add a small label next to sliders showing current menu name
+// We'll add this dynamically in JS
+
+fs.writeFileSync(jsFile, js, 'utf8');
+console.log('JS done');
+
+// Verify
+try { require('vm').runInThisContext(js); console.log('JS VERIFY OK'); } catch(e) {
+    if (e.message.indexOf('document')>=0 || e.message.indexOf('CSInterface')>=0 || e.message.indexOf('window')>=0 || e.message.indexOf('localStorage')>=0) console.log('JS VERIFY OK');
+    else { console.log('FAIL: ' + e.message); }
+}
+
+// ===== 3. HTML =====================================================================
+var htmlFile = 'C:/AE_FX_Panel/AE_FX_Manager (1)/AE_FX_Manager/WB_PieMenu_Official/CEP/WB_PieMenu_Panel/index.html';
+var html = fs.readFileSync(htmlFile, 'utf8');
+html = html.replace('hittest27', 'hittest28');
+fs.writeFileSync(htmlFile, html, 'utf8');
+console.log('HTML done');

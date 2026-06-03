@@ -77,6 +77,7 @@ extern int  g_menuType;
 extern int  g_itemCount;
 extern int  g_pieCount;
 extern int  g_quickCount;
+extern int  g_quickStyle; // 0=vertical list, 1=numpad grid
 extern int  g_curPage;
 extern int  g_totalPages;
 extern int  g_wheelCount;
@@ -133,6 +134,8 @@ extern char  g_numpadDevicePath[512];
 extern COLORREF g_palette[MAX_ITEMS];
 extern HBRUSH   g_brushes[MAX_ITEMS];
 extern HBITMAP  g_bitmaps[4][MAX_PAGES][MAX_ITEMS][2];
+extern char     g_bgPath[4][MAX_PATH];
+extern HBITMAP  g_bgBitmap[4];
 extern double   g_sectorStart[MAX_ITEMS], g_sectorEnd[MAX_ITEMS], g_sectorCenter[MAX_ITEMS];
 extern bool     g_layoutInit;
 extern double   g_arcAngleDeg;
@@ -195,7 +198,9 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
 void DrawPie(HDC hdc);
 
 void DrawQuick(HDC hdc);
+void DrawQuickGrid(HDC hdc);
 int HitTestQuick(int mx, int my);
+int HitTestQuickGrid(int mx, int my);
 
 void DrawWheel(HDC hdc);
 int HitTestWheel(int mx, int my);

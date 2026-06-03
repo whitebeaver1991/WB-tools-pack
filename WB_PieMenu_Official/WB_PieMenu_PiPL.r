@@ -16,7 +16,7 @@ resource 'PiPL' (16000) {
 			"General Plugin"
 		},
 		Version {
-			257
+			258
 		},
 #ifdef AE_OS_WIN
 	#ifdef AE_PROC_INTELx64

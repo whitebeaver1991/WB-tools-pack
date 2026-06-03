@@ -11,8 +11,9 @@ bool           g_class_registered[4] = {false};
 int  g_menuType   = MENU_PIE;
 int  g_itemCount  = 4;
 int  g_pieCount   = 4;
-int  g_quickCount = 6;
-int  g_curPage    = 0;
+int   g_quickCount = 6;
+int   g_quickStyle = 0;
+int   g_curPage    = 0;
 int  g_totalPages = 3;
 int  g_wheelCount = 8;
 int  g_scrollAccum = 0;
@@ -72,6 +73,8 @@ COLORREF g_palette[MAX_ITEMS] = {
 };
 HBRUSH   g_brushes[MAX_ITEMS] = {0};
 HBITMAP  g_bitmaps[4][MAX_PAGES][MAX_ITEMS][2] = {{{{0}}}};
+char     g_bgPath[4][MAX_PATH] = {{0}};
+HBITMAP  g_bgBitmap[4] = {0};
 double   g_sectorStart[MAX_ITEMS], g_sectorEnd[MAX_ITEMS], g_sectorCenter[MAX_ITEMS];
 bool     g_layoutInit = false;
 double   g_arcAngleDeg = -90.0;
@@ -305,6 +308,8 @@ void ClearBitmaps(void)
             for (int i = 0; i < MAX_ITEMS; i++)
                 for (int j = 0; j < 2; j++)
                     if (g_bitmaps[m][p][i][j]) { DeleteObject(g_bitmaps[m][p][i][j]); g_bitmaps[m][p][i][j] = NULL; }
+    for (int m = 0; m < 4; m++)
+        if (g_bgBitmap[m]) { DeleteObject(g_bgBitmap[m]); g_bgBitmap[m] = NULL; }
 }
 
 void CancelTimer(void)
@@ -349,6 +354,8 @@ void LoadBitmaps(void)
             if (g_imgNorm[g_menuType][p][i][0])
                 g_bitmaps[g_menuType][p][i][0] = LoadImageFile(g_imgNorm[g_menuType][p][i]);
         }
+    if (g_bgPath[g_menuType][0])
+        g_bgBitmap[g_menuType] = LoadImageFile(g_bgPath[g_menuType]);
 }
 
 void ApplyEffect(const char *matchName)
@@ -858,10 +865,20 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                             }
                             free(ri); return 0; // also consume key-up
                         }
-                        // Numpad 0-9 → F13-F21
+                        // Numpad 0-9 → F13-F21, or grid select when quick grid menu is showing
                         if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) {
-                            int idx = vk - VK_NUMPAD0;
                             BOOL up = (ri->data.keyboard.Flags & RI_KEY_BREAK);
+                            if (g_hwnd && g_menuType == MENU_QUICK && g_quickStyle == 1) {
+                                if (!up) {
+                                    // Map numpad key layout to grid item indices:
+                                    // 7=0,8=1,9=2,4=3,5=4,6=5,1=6,2=7,3=8,0=9
+                                    static const int numpadToGrid[] = {9,6,7,8,3,4,5,0,1,2};
+                                    int gi = numpadToGrid[vk - VK_NUMPAD0];
+                                    if (gi < g_itemCount) SelectItem(gi);
+                                }
+                                free(ri); return 0;
+                            }
+                            int idx = vk - VK_NUMPAD0;
                             WORD fKey = VK_F13 + idx;
                             INPUT in[2] = {0};
                             in[0].type = INPUT_KEYBOARD; in[0].ki.wVk = vk; in[0].ki.dwFlags = KEYEVENTF_KEYUP;
@@ -869,6 +886,14 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                             if (up) in[1].ki.dwFlags = KEYEVENTF_KEYUP;
                             SendInput(2, in, sizeof(INPUT));
                             free(ri); return 0;
+                        }
+                        // Numpad +/- → page turn when grid menu is showing
+                        if (g_hwnd && g_menuType == MENU_QUICK && g_quickStyle == 1) {
+                            BOOL up = (ri->data.keyboard.Flags & RI_KEY_BREAK);
+                            if (!up) {
+                                if (vk == VK_ADD || vk == VK_MULTIPLY) { GotoPage(g_curPage + 1); free(ri); return 0; }
+                                if (vk == VK_SUBTRACT || vk == VK_DIVIDE) { GotoPage(g_curPage - 1); free(ri); return 0; }
+                            }
                         }
                     }
                 }

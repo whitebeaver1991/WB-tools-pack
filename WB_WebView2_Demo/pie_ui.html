@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: transparent;
+  cursor: default;
+}
+
+/* ─── Container: centered pie circle ─── */
+#container {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 540px; height: 540px;
+  border-radius: 50%;
+  background: rgba(22, 22, 22, 0.92);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+#sectors { width: 100%; height: 100%; }
+
+/* ─── Sector hover highlight via stroke ─── */
+.sector-path { transition: fill 0.12s, stroke 0.12s; cursor: pointer; }
+.sector-path:hover { fill: #3a3a3a; stroke: #5a9bf5; stroke-width: 2; }
+.sector-path.active { fill: #444; stroke: #ffffff; stroke-width: 2.5; }
+
+.sector-label {
+  font-size: 14px; font-weight: 600;
+  fill: rgba(255,255,255,0.6);
+  text-anchor: middle; dominant-baseline: central;
+  pointer-events: none;
+  transition: fill 0.12s;
+}
+.sector-label.active { fill: #fff; }
+.sector-label-hint {
+  font-size: 9px;
+  fill: rgba(255,255,255,0.2);
+  text-anchor: middle; dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* ─── Center ring ─── */
+#center-ring {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 3;
+  pointer-events: none;
+}
+
+/* ─── Search panel (fades in when activated) ─── */
+#searchPanel {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  background: rgba(26, 26, 26, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  padding: 12px;
+  display: none;
+  z-index: 10;
+}
+#searchPanel.visible { display: block; }
+
+#searchInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 14px;
+  outline: none;
+}
+#searchInput:focus { border-color: #5a9bf5; }
+#searchInput::placeholder { color: #555; }
+
+#searchResults {
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+#searchResults::-webkit-scrollbar { width: 4px; }
+#searchResults::-webkit-scrollbar-track { background: transparent; }
+#searchResults::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.search-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #aaa;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.search-item:hover, .search-item.selected {
+  background: #2a3a5a;
+  color: #fff;
+}
+
+/* ─── Bottom hints ─── */
+#hints {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  pointer-events: none;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- PIE MENU SVG -->
+<div id="container">
+  <svg id="sectors" viewBox="0 0 400 400">
+    <defs>
+      <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="rgba(30,30,30,0)"/>
+        <stop offset="85%"  stop-color="rgba(30,30,30,0)"/>
+        <stop offset="95%"  stop-color="rgba(40,40,40,0.3)"/>
+        <stop offset="100%" stop-color="rgba(50,50,50,0.5)"/>
+      </radialGradient>
+    </defs>
+    <circle cx="200" cy="200" r="198" fill="url(#bgGrad)"/>
+  </svg>
+
+  <!-- Search overlay panel -->
+  <div id="searchPanel">
+    <input id="searchInput" type="text" placeholder="输入搜索特效...">
+    <div id="searchResults"></div>
+  </div>
+  <div id="hints">鼠标选择 · 双击打开搜索 · Esc关闭</div>
+</div>
+
+<script>
+// ─── Demo items ──────────────────────────
+var ITEMS = [
+  ['Glow 辉光', 'ADBE Glow2'],
+  ['Shadow 阴影', 'ADBE Drop Shadow'],
+  ['Blur 模糊', 'ADBE Gaussian Blur'],
+  ['Bevel 浮雕', 'ADBE Bevel Alpha'],
+  ['Bulge 膨胀', 'ADBE Bulge'],
+  ['Mosaic 马赛克', 'ADBE Mosaic'],
+  ['Noise 噪点', 'ADBE Noise HLS'],
+  ['Wave 波浪', 'ADBE Wave Warp']
+];
+var ACTIVE = -1;
+
+// ─── Build SVG sectors ───────────────────
+function buildPie() {
+  var svg = document.getElementById('sectors');
+  var n = ITEMS.length;
+  var step = 360 / n;
+  var cx = 200, cy = 200, outer = 190, inner = 38;
+  // Sectors
+  for (var i = 0; i < n; i++) {
+    var a1 = i * step - 90;
+    var a2 = (i + 1) * step - 90;
+    var r1 = a1 * Math.PI / 180, r2 = a2 * Math.PI / 180;
+    var x1 = cx + outer * Math.cos(r1), y1 = cy + outer * Math.sin(r1);
+    var x2 = cx + outer * Math.cos(r2), y2 = cy + outer * Math.sin(r2);
+    var x3 = cx + inner * Math.cos(r2), y3 = cy + inner * Math.sin(r2);
+    var x4 = cx + inner * Math.cos(r1), y4 = cy + inner * Math.sin(r1);
+    var large = step > 180 ? 1 : 0;
+    var d = 'M' + x1 + ',' + y1 +
+            ' A' + outer + ',' + outer + ' 0 ' + large + ',1 ' + x2 + ',' + y2 +
+            ' L' + x3 + ',' + y3 +
+            ' A' + inner + ',' + inner + ' 0 ' + large + ',0 ' + x4 + ',' + y4 + ' Z';
+    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', '#2a2a2a');
+    path.setAttribute('stroke', 'rgba(255,255,255,0.06)');
+    path.setAttribute('stroke-width', '1');
+    path.classList.add('sector-path');
+    path.dataset.idx = i;
+    path.addEventListener('mouseenter', function(){ highlight(parseInt(this.dataset.idx)); });
+    path.addEventListener('click', function(){ select(parseInt(this.dataset.idx)); });
+    svg.appendChild(path);
+  }
+  // Divider lines
+  for (var i = 0; i < n; i++) {
+    var a = i * step - 90;
+    var r = a * Math.PI / 180;
+    var x1 = cx + inner * Math.cos(r), y1 = cy + inner * Math.sin(r);
+    var x2 = cx + outer * Math.cos(r), y2 = cy + outer * Math.sin(r);
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'rgba(255,255,255,0.08)');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+  // Labels
+  for (var i = 0; i < n; i++) {
+    var a = (i + 0.5) * step - 90;
+    var r = a * Math.PI / 180;
+    var tx = cx + (outer - 36) * Math.cos(r), ty = cy + (outer - 36) * Math.sin(r);
+    var label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', tx); label.setAttribute('y', ty - 6);
+    label.setAttribute('class', 'sector-label');
+    label.id = 'label-' + i;
+    label.textContent = ITEMS[i][0];
+    svg.appendChild(label);
+    var hint = document.createElementNS('http://www.w3.org/2000/svg','text');
+    hint.setAttribute('x', tx); hint.setAttribute('y', ty + 10);
+    hint.setAttribute('class', 'sector-label-hint');
+    hint.textContent = ITEMS[i][1].replace('ADBE ', '');
+    svg.appendChild(hint);
+  }
+  // Center ring
+  var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+  ring.setAttribute('r', inner);
+  ring.id = 'center-ring';
+  svg.appendChild(ring);
+}
+
+// ─── Highlight / Select ──────────────────
+function highlight(idx) {
+  if (ACTIVE === idx) return;
+  var paths = document.querySelectorAll('.sector-path');
+  var labels = document.querySelectorAll('.sector-label');
+  paths.forEach(function(p, i){
+    p.classList.toggle('active', i === idx);
+    if (i === idx) p.setAttribute('fill', '#3a3a3a');
+    else p.setAttribute('fill', '#2a2a2a');
+  });
+  labels.forEach(function(l, i){
+    l.classList.toggle('active', i === idx);
+  });
+  ACTIVE = idx;
+  // Hide search panel
+  document.getElementById('searchPanel').classList.remove('visible');
+}
+function select(idx) {
+  var item = ITEMS[idx];
+  if (!item) return;
+  // Send to C++
+  if (window.chrome && window.chrome.webview) {
+    window.chrome.webview.postMessage(JSON.stringify({
+      action: 'select',
+      name: item[0],
+      match: item[1]
+    }));
+  }
+  // Close (hide overlay)
+  window.demoClose && window.demoClose();
+}
+function clearHighlight() {
+  document.querySelectorAll('.sector-path').forEach(function(p){
+    p.classList.remove('active');
+    p.setAttribute('fill', '#2a2a2a');
+  });
+  document.querySelectorAll('.sector-label').forEach(function(l){
+    l.classList.remove('active');
+  });
+  ACTIVE = -1;
+}
+
+// ─── Search (double-click center to open) ──
+function showSearch() {
+  var panel = document.getElementById('searchPanel');
+  panel.classList.toggle('visible');
+  if (panel.classList.contains('visible')) {
+    var input = document.getElementById('searchInput');
+    input.value = '';
+    input.focus();
+    updateSearch('');
+  } else {
+    document.getElementById('searchResults').innerHTML = '';
+  }
+}
+function updateSearch(q) {
+  var results = document.getElementById('searchResults');
+  results.innerHTML = '';
+  if (!q) return;
+  var ql = q.toLowerCase();
+  var hits = [];
+  for (var i = 0; i < ITEMS.length; i++) {
+    if (ITEMS[i][0].toLowerCase().indexOf(ql) >= 0 ||
+        ITEMS[i][1].toLowerCase().indexOf(ql) >= 0) {
+      hits.push(i);
+    }
+  }
+  for (var i = 0; i < hits.length; i++) {
+    var div = document.createElement('div');
+    div.className = 'search-item';
+    div.textContent = ITEMS[hits[i]][0] + '  (' + ITEMS[hits[i]][1] + ')';
+    (function(idx){ div.addEventListener('click', function(){ select(idx); }); })(hits[i]);
+    results.appendChild(div);
+  }
+}
+
+// ─── Keyboard ────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('searchPanel').classList.contains('visible')) {
+      document.getElementById('searchPanel').classList.remove('visible');
+    } else {
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage(JSON.stringify({ action: 'close' }));
+      }
+      window.demoClose && window.demoClose();
+    }
+  }
+  if (e.key === 'Enter' && ACTIVE >= 0) select(ACTIVE);
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  updateSearch(this.value);
+});
+
+// ─── Called from C++ when overlay shows ───
+window.demoShow = function() {
+  clearHighlight();
+  document.getElementById('searchPanel').classList.remove('visible');
+};
+window.demoClose = function() {
+  // C++ handles the actual hide via WM_ACTIVATE
+};
+
+// ─── Center double-click opens search ─────
+document.getElementById('container').addEventListener('dblclick', function(e) {
+  var rect = this.getBoundingClientRect();
+  var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  var dx = e.clientX - cx, dy = e.clientY - cy;
+  if (Math.sqrt(dx*dx + dy*dy) < 50) showSearch();
+});
+
+// ─── Init ────────────────────────────────
+buildPie();
+</script>
+</body>
+</html>

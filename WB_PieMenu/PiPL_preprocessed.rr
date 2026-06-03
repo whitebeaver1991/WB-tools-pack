@@ -1,0 +1,9 @@
+resource 'PiPL' (2800) {
+    {
+        'kind' { 'AEG' },
+        'name' { "WB Pie Menu" },
+        'cat ' { "General Plugin" },
+        'vers' { 196608 },
+        'x86 ' {"EntryPointFunc"}
+    }
+};

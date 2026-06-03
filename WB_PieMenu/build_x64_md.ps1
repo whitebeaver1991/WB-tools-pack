@@ -1,0 +1,64 @@
+param([string]$Configuration = "Release")
+
+$VCVARS = "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvarsall.bat"
+Write-Host "Loading VS 2026 x64 environment ..."
+cmd /c "`"$VCVARS`" x64 > nul 2>&1 && set" | ForEach-Object {
+    if ($_ -match "^(.*?)=(.*)$") {
+        Set-Item -Path "env:$($matches[1])" -Value $matches[2]
+    }
+}
+
+$ProjectRoot = "E:\WB_PieMenu"
+$BuildRoot = Join-Path $ProjectRoot "build"
+$OutDir = Join-Path $BuildRoot $Configuration
+New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
+
+$SDK = "E:\AfterEffectsSDK_25.2_20_win\ae25.2_20.64bit.AfterEffectsSDK\AfterEffectsSDK\Examples"
+
+$CL_Common = @(
+    "/nologo", "/c", "/W3", "/EHsc", "/MD", "/O2"
+    "/DMSWindows", "/DWIN32", "/D_WINDOWS", "/DAE_PROC_AMD64=1", "/D_USRDLL=1"
+)
+
+$INC = @()
+$INC += "/I"; $INC += "$SDK\Headers"
+$INC += "/I"; $INC += "$SDK\Headers\SP"
+$INC += "/I"; $INC += "$SDK\Headers\Win"
+$INC += "/I"; $INC += "$SDK\Resources"
+$INC += "/I"; $INC += "$SDK\Util"
+$INC += "/I"; $INC += "$ProjectRoot"
+
+$OBJS = @()
+
+foreach ($src in @("WB_PieMenu.cpp","PieOverlay.cpp","WheelOverlay.cpp","SearchOverlay.cpp","EffectData.cpp","AEEffectManager.cpp")) {
+    $sp = Join-Path $ProjectRoot $src
+    $op = Join-Path $OutDir ($src -replace "\.cpp$",".obj")
+    $OBJS += $op
+    Write-Host "Compiling $src ..."
+    & "cl.exe" @CL_Common @INC "/Fo$op" $sp
+    if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $src" -ForegroundColor Red; exit 1 }
+}
+
+foreach ($src in @("$SDK\Util\AEGP_SuiteHandler.cpp","$SDK\Util\MissingSuiteError.cpp")) {
+    $bn = Split-Path $src -Leaf
+    $op = Join-Path $OutDir ($bn -replace "\.cpp$",".obj")
+    $OBJS += $op
+    Write-Host "Compiling $bn ..."
+    & "cl.exe" @CL_Common @INC "/Fo$op" $src
+    if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $bn" -ForegroundColor Red; exit 1 }
+}
+
+Write-Host "Compiling Resource.rc ..."
+& "rc.exe" "/nologo" "/I$ProjectRoot" "/fo$OutDir\WB_PieMenu.res" "$ProjectRoot\Resource.rc"
+if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: Resource.rc" -ForegroundColor Red; exit 1 }
+
+$OutputDll = Join-Path $OutDir "WB_PieMenu.aex"
+Write-Host "Linking ..."
+$LINK_ARGS = @("/nologo", "/DLL", "/out:$OutputDll")
+$LINK_ARGS += $OBJS
+$LINK_ARGS += "$OutDir\WB_PieMenu.res"
+$LINK_ARGS += @("user32.lib","gdi32.lib","comctl32.lib","comdlg32.lib","winspool.lib","ole32.lib","oleaut32.lib","uuid.lib")
+& "link.exe" @LINK_ARGS
+if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: Linking" -ForegroundColor Red; exit 1 }
+
+Write-Host "`nBUILD SUCCESSFUL: $OutputDll" -ForegroundColor Green

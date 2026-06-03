@@ -88,12 +88,17 @@ void SetVal(const char *key, const char *val)
     else if (strcmp(key, "wheel_menu_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_menuScale[2] = n; return; }
     else if (strcmp(key, "infinite_menu_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 150) g_menuScale[3] = n; return; }
     else if (strcmp(key, "menu_scale") == 0) { return; }
+    else if (strcmp(key, "quick_style") == 0) { g_quickStyle = (atoi(val) != 0) ? 1 : 0; return; }
     else if (strcmp(key, "numpad_enabled") == 0) { g_numpadEnabled = (atoi(val) != 0); return; }
     else if (strcmp(key, "numpad_enter_action") == 0) { int n = atoi(val); if (n >= 0 && n <= 4) g_numpadEnterAction = n; return; }
     else if (strcmp(key, "select_mode") == 0) { g_selectMode = (atoi(val) != 0) ? 1 : 0; return; }
     else if (strcmp(key, "guide_enabled") == 0) { g_guideEnabled = (atoi(val) != 0); return; }
     else if (strcmp(key, "guide_color") == 0) { unsigned int c; if (sscanf_s(val, "%x", &c) >= 1) { g_guideColor = RGB((c>>16)&0xFF,(c>>8)&0xFF,c&0xFF) & 0xFFFFFF; } return; }
     else if (strcmp(key, "guide_width") == 0) { int n = atoi(val); if (n >= 1 && n <= 6) g_guideWidth = n; return; }
+    else if (strcmp(key, "pie_bg_path") == 0) { strncpy_s(g_bgPath[0], MAX_PATH, val, _TRUNCATE); return; }
+    else if (strcmp(key, "quick_bg_path") == 0) { strncpy_s(g_bgPath[1], MAX_PATH, val, _TRUNCATE); return; }
+    else if (strcmp(key, "wheel_bg_path") == 0) { strncpy_s(g_bgPath[2], MAX_PATH, val, _TRUNCATE); return; }
+    else if (strcmp(key, "infinite_bg_path") == 0) { strncpy_s(g_bgPath[3], MAX_PATH, val, _TRUNCATE); return; }
     else if (strcmp(key, "numpad_handle") == 0) { g_numpadHandle = (HANDLE)(INT_PTR)_strtoui64(val, NULL, 16); return; }
     else if (strcmp(key, "numpad_name") == 0) { strncpy_s(g_numpadName, sizeof(g_numpadName), val, _TRUNCATE); return; }
     else if (strcmp(key, "numpad_device_path") == 0) { strncpy_s(g_numpadDevicePath, sizeof(g_numpadDevicePath), val, _TRUNCATE); return; }

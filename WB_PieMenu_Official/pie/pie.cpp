@@ -13,6 +13,15 @@ void DrawPie(HDC hdc)
     HBITMAP bmp = CreateCompatibleBitmap(hdc, ws, ws);
     HBITMAP old = (HBITMAP)SelectObject(dc, bmp);
     FillRect(dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    // Draw background image if available
+    if (g_bgBitmap[g_menuType]) {
+        BITMAP bm; GetObject(g_bgBitmap[g_menuType], sizeof(bm), &bm);
+        HDC bgDc = CreateCompatibleDC(dc);
+        HBITMAP bgOb = (HBITMAP)SelectObject(bgDc, g_bgBitmap[g_menuType]);
+        SetStretchBltMode(dc, HALFTONE);
+        StretchBlt(dc, 0, 0, ws, ws, bgDc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+        SelectObject(bgDc, bgOb); DeleteDC(bgDc);
+    }
     SetBkMode(dc, TRANSPARENT);
     HPEN np = CreatePen(PS_NULL, 0, 0);
 
