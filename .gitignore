@@ -54,3 +54,14 @@ _deploy/infinite_preview.html
 
 # External SDK / packages
 packages/
+
+# Unused demo/prototype projects
+WB_WebView2_Demo/
+Easy_Cheese_*/
+easy_cheese/
+build_easy_cheese_official.ps1
+rebuild_easy_cheese.ps1
+compile_jsxbin.jsx
+PiPL.bin
+PiPL.rc
+wb_copycat

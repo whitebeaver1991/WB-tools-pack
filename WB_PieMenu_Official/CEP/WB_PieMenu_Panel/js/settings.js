@@ -13,6 +13,17 @@ var numpadEnabled = false;
 var guideEnabled = false, guideColor = 'c0c0c0', guideWidth = 2;
 var selectMode = 0;
 var infiniteCount = 8;
+var quickStyle = 0;
+var g_bgPath = ['','','',''];
+var g_bgScale = [100,100,100,100];
+var g_bgOffsetX = [0,0,0,0];
+var g_bgOffsetY = [0,0,0,0];
+var g_slotBgColor = [
+    ['dc5050','50c864','5050dc','dcc83c','b43cb4','3cc8c8','f08c28','5a5a5f'],
+    ['dc5050','50c864','5050dc','dcc83c','b43cb4','3cc8c8','f08c28','5a5a5f'],
+    ['dc5050','50c864','5050dc','dcc83c','b43cb4','3cc8c8','f08c28','5a5a5f'],
+    ['28282d','28282d','28282d','28282d','28282d','28282d','28282d','28282d']
+];
 var g_settingsVersion = 0;
 var g_recentEffects = []; var RECENT_MAX = 10;
 var g_fbRecent = [];
@@ -842,9 +853,32 @@ function parseSettings(data) {
     if (parsed['guide_width']) guideWidth = parseInt(parsed['guide_width']) || 2;
     if (parsed['menu_type']) curMenu = parseInt(parsed['menu_type']) || 0;
     if (parsed['pie_count']) pieCount = Math.min(Math.max(parseInt(parsed['pie_count'])||4,2),8);
-    if (parsed['quick_count']) quickCount = Math.min(Math.max(parseInt(parsed['quick_count'])||6,1),9);
+    if (parsed['quick_count']) quickCount = Math.min(Math.max(parseInt(parsed['quick_count'])||6,1),14);
     if (parsed['wheel_count']) infiniteCount = parseInt(parsed['wheel_count']) || 8;
     if (parsed['item_count']) pieCount = Math.min(Math.max(parseInt(parsed['item_count'])||4,2),8);
+    if (parsed['quick_style']) quickStyle = parseInt(parsed['quick_style']) || 0;
+    if (parsed['pie_bg_path']) g_bgPath[0] = parsed['pie_bg_path'];
+    if (parsed['quick_bg_path']) g_bgPath[1] = parsed['quick_bg_path'];
+    if (parsed['wheel_bg_path']) g_bgPath[2] = parsed['wheel_bg_path'];
+    if (parsed['infinite_bg_path']) g_bgPath[3] = parsed['infinite_bg_path'];
+    if (parsed['pie_bg_scale']) g_bgScale[0] = parseInt(parsed['pie_bg_scale']) || 100;
+    if (parsed['quick_bg_scale']) g_bgScale[1] = parseInt(parsed['quick_bg_scale']) || 100;
+    if (parsed['wheel_bg_scale']) g_bgScale[2] = parseInt(parsed['wheel_bg_scale']) || 100;
+    if (parsed['infinite_bg_scale']) g_bgScale[3] = parseInt(parsed['infinite_bg_scale']) || 100;
+    if (parsed['pie_bg_ox']) g_bgOffsetX[0] = parseInt(parsed['pie_bg_ox']) || 0;
+    if (parsed['quick_bg_ox']) g_bgOffsetX[1] = parseInt(parsed['quick_bg_ox']) || 0;
+    if (parsed['wheel_bg_ox']) g_bgOffsetX[2] = parseInt(parsed['wheel_bg_ox']) || 0;
+    if (parsed['infinite_bg_ox']) g_bgOffsetX[3] = parseInt(parsed['infinite_bg_ox']) || 0;
+    if (parsed['pie_bg_oy']) g_bgOffsetY[0] = parseInt(parsed['pie_bg_oy']) || 0;
+    if (parsed['quick_bg_oy']) g_bgOffsetY[1] = parseInt(parsed['quick_bg_oy']) || 0;
+    if (parsed['wheel_bg_oy']) g_bgOffsetY[2] = parseInt(parsed['wheel_bg_oy']) || 0;
+    if (parsed['infinite_bg_oy']) g_bgOffsetY[3] = parseInt(parsed['infinite_bg_oy']) || 0;
+    for (var sci = 0; sci < 4; sci++) {
+        for (var scj = 0; scj < 8; scj++) {
+            var sk = 'slot_bg_color_' + sci + '_' + scj;
+            if (parsed[sk]) g_slotBgColor[sci][scj] = parsed[sk];
+        }
+    }
 
     // Load infinite layout settings
     window._infLayoutSettings = {
@@ -928,6 +962,11 @@ function saveSettings() {
                  'wheel_count=' + infiniteCount,
                  'select_mode=' + selectMode,
                  'menu_type=' + curMenu, 'pie_count=' + pieCount, 'quick_count=' + quickCount,
+                 'quick_style=' + quickStyle,
+                 'pie_bg_path=' + g_bgPath[0] + '\nquick_bg_path=' + g_bgPath[1] + '\nwheel_bg_path=' + g_bgPath[2] + '\ninfinite_bg_path=' + g_bgPath[3],
+                 'pie_bg_scale=' + g_bgScale[0] + '\nquick_bg_scale=' + g_bgScale[1] + '\nwheel_bg_scale=' + g_bgScale[2] + '\ninfinite_bg_scale=' + g_bgScale[3],
+                 'pie_bg_ox=' + g_bgOffsetX[0] + '\nquick_bg_ox=' + g_bgOffsetX[1] + '\nwheel_bg_ox=' + g_bgOffsetX[2] + '\ninfinite_bg_ox=' + g_bgOffsetX[3],
+                 'pie_bg_oy=' + g_bgOffsetY[0] + '\nquick_bg_oy=' + g_bgOffsetY[1] + '\nwheel_bg_oy=' + g_bgOffsetY[2] + '\ninfinite_bg_oy=' + g_bgOffsetY[3],
                  'infinite_sectors=' + ((document.getElementById('infSectors')||{}).value || 8),
                  'infinite_split_R2=' + ((document.getElementById('infSplitR2')||{}).value || '2a'),
                  'infinite_split_R3=' + ((document.getElementById('infSplitR3')||{}).value || 3),
@@ -937,6 +976,11 @@ function saveSettings() {
     for (var si = 0; si < 8; si++) {
         if (window._infSectorColors && window._infSectorColors[si])
             lines.push('infinite_sector_' + si + '_color=' + window._infSectorColors[si].replace('#',''));
+    }
+    for (var sci2 = 0; sci2 < 4; sci2++) {
+        for (var scj2 = 0; scj2 < 8; scj2++) {
+            lines.push('slot_bg_color_' + sci2 + '_' + scj2 + '=' + g_slotBgColor[sci2][scj2]);
+        }
     }
     // Persist infinite slot data
     if (window._infSlotData) {
@@ -990,12 +1034,24 @@ function triggerAutoSave() {
 function collectFromUI() {
     var s = document.getElementById('winAlphaSlider');
     if (s) winAlpha = parseInt(s.value) || 60;
-    var slv = document.getElementById('winAlphaValue');
-    if (slv) slv.textContent = winAlpha;
-    var ba = document.getElementById('bgAlphaSlider');
-    if (ba) bgAlpha[curMenu] = parseInt(ba.value) || 60;
-    var bav = document.getElementById('bgAlphaValue');
-    if (bav) bav.textContent = bgAlpha[curMenu];
+    var ba = document.getElementById('bgAlphaSlider0');
+    if (ba) bgAlpha[0] = parseInt(ba.value) || 60;
+    var bc = document.getElementById('bgColorInput0');
+    if (bc) bgColor[0] = bc.value.replace('#', '').toLowerCase();
+    var gc = document.getElementById('glowColorInput0');
+    if (gc) glowColor[0] = gc.value.replace('#', '').toLowerCase();
+    var pgc = document.getElementById('pageColorInput0');
+    if (pgc) pageColor[0] = pgc.value.replace('#', '').toLowerCase();
+    var gi = document.getElementById('glowIntensitySlider0');
+    if (gi) glowIntensity[0] = parseInt(gi.value) || 100;
+    var id = document.getElementById('imgDistSlider0');
+    if (id) imgDist[0] = parseInt(id.value) || 45;
+    var td = document.getElementById('textDistSlider0');
+    if (td) textDist[0] = parseInt(td.value) || 85;
+    var ts = document.getElementById('textSizeSlider0');
+    if (ts) textSize[0] = parseInt(ts.value) || 100;
+    var ms0 = document.getElementById('menuScaleSlider0');
+    if (ms0) menuScale[0] = parseInt(ms0.value) || 100;
     var nt = document.getElementById('numpadToggle');
     if (nt) numpadEnabled = nt.checked;
     var sm0 = document.getElementById('selectMode0');
@@ -1003,52 +1059,34 @@ function collectFromUI() {
     if (sm0 && sm1) selectMode = sm1.checked ? 1 : 0;
     var wcs = document.getElementById('wheelCountSelect');
     if (wcs) infiniteCount = parseInt(wcs.value) || 8;
-    var bc = document.getElementById('bgColorInput');
-    if (bc) bgColor[curMenu] = bc.value.replace('#', '').toLowerCase();
-    var bct = document.getElementById('bgColorText');
-    if (bct) bct.textContent = '#' + bgColor[curMenu].toUpperCase();
     var gt = document.getElementById('guideToggle');
     if (gt) guideEnabled = gt.checked;
     var gw = document.getElementById('guideWidthSlider');
     if (gw) guideWidth = parseInt(gw.value) || 2;
-    var gwv = document.getElementById('guideWidthValue');
-    if (gwv) gwv.textContent = guideWidth;
     var gdc = document.getElementById('guideColorInput');
     if (gdc) guideColor = gdc.value.replace('#', '').toLowerCase();
-    var gdct = document.getElementById('guideColorText');
-    if (gdct) gdct.textContent = '#' + guideColor.toUpperCase();
-    var gc = document.getElementById('glowColorInput');
-    if (gc) glowColor[curMenu] = gc.value.replace('#', '').toLowerCase();
-    var gct = document.getElementById('glowColorText');
-    if (gct) gct.textContent = '#' + glowColor[curMenu].toUpperCase();
-    var pgc = document.getElementById('pageColorInput');
-    if (pgc) pageColor[curMenu] = pgc.value.replace('#', '').toLowerCase();
-    var pgct = document.getElementById('pageColorText');
-    if (pgct) pgct.textContent = '#' + pageColor[curMenu].toUpperCase();
-    var gi = document.getElementById('glowIntensitySlider');
-    if (gi) glowIntensity[curMenu] = parseInt(gi.value) || 100;
-    var giv = document.getElementById('glowIntensityValue');
-    if (giv) giv.textContent = glowIntensity[curMenu];
-    var id = document.getElementById('imgDistSlider');
-    if (id) imgDist[curMenu] = parseInt(id.value) || 45;
-    var idv = document.getElementById('imgDistValue');
-    if (idv) idv.textContent = imgDist[curMenu];
-    var td = document.getElementById('textDistSlider');
-    if (td) textDist[curMenu] = parseInt(td.value) || 85;
-    var tdv = document.getElementById('textDistValue');
-    if (tdv) tdv.textContent = textDist[curMenu];
-    var ts = document.getElementById('textSizeSlider');
-    if (ts) textSize[curMenu] = parseInt(ts.value) || 100;
-    var tsv = document.getElementById('textSizeValue');
-    if (tsv) tsv.textContent = textSize[curMenu] + '%';
-    var uz = document.getElementById('uiZoomSlider');
-    if (uz) uiZoom[curMenu] = parseInt(uz.value) || 100;
-    var uzv = document.getElementById('uiZoomValue');
-    if (uzv) uzv.textContent = uiZoom[curMenu];
-    var ms = document.getElementById('menuScaleSlider');
-    if (ms) menuScale[curMenu] = parseInt(ms.value) || 100;
-    var msv = document.getElementById('menuScaleValue');
-    if (msv) msv.textContent = menuScale[curMenu];
+    for (var mi = 1; mi < 4; mi++) {
+        var msEl = document.getElementById('menuScaleSlider' + mi);
+        if (msEl) menuScale[mi] = parseInt(msEl.value) || 100;
+    }
+    var qs = document.getElementById('quickStyleSelect');
+    if (qs) quickStyle = parseInt(qs.value) || 0;
+    var bgInputs = ['pieBgPath','quickBgPath','wheelBgPath','infiniteBgPath'];
+    for (var bi = 0; bi < 4; bi++) {
+        var bp = document.getElementById(bgInputs[bi]);
+        if (bp) g_bgPath[bi] = bp.value;
+    }
+    var bgScaleIds = ['pieBgScale','quickBgScale','wheelBgScale','infiniteBgScale'];
+    var bgOxIds = ['pieBgOx','quickBgOx','wheelBgOx','infiniteBgOx'];
+    var bgOyIds = ['pieBgOy','quickBgOy','wheelBgOy','infiniteBgOy'];
+    for (var bdi = 0; bdi < 4; bdi++) {
+        var bs = document.getElementById(bgScaleIds[bdi]);
+        if (bs) g_bgScale[bdi] = parseInt(bs.value) || 100;
+        var bx = document.getElementById(bgOxIds[bdi]);
+        if (bx) g_bgOffsetX[bdi] = parseInt(bx.value) || 0;
+        var by = document.getElementById(bgOyIds[bdi]);
+        if (by) g_bgOffsetY[bdi] = parseInt(by.value) || 0;
+    }
     var count = (curMenu === 0) ? pieCount : (curMenu === 1) ? quickCount : 8;
     for (var i = 0; i < count; i++) {
         var el = document.getElementById('itemName_' + i);

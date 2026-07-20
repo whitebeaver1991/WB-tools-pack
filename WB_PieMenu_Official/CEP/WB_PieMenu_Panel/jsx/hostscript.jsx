@@ -71,6 +71,21 @@ function triggerDumpEffects() {
     return "OK";
 }
 
+function triggerNumpadPairing() {
+    ensureSettingsDir();
+    var data = readSettings();
+    var lines = data.split("\n");
+    var found = false;
+    for (var i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf("numpad_pairing=") === 0) {
+            lines[i] = "numpad_pairing=1";
+            found = true; break;
+        }
+    }
+    if (!found) lines.push("numpad_pairing=1");
+    writeSettings(lines.join("\n"));
+}
+
 function readEffectsMap() {
     var mapFile = new File(SETTINGS_DIR + "/effects_map.txt");
     if (!mapFile.exists) return "";

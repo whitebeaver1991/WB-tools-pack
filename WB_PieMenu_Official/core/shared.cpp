@@ -1,6 +1,6 @@
 #include "..\WB_PieMenu.h"
 
-AEGP_Command   S_pi_cmd[6] = {0};
+AEGP_Command   S_pi_cmd[8] = {0};
 AEGP_PluginID  S_id        = 0L;
 SPBasicSuite   *sP         = NULL;
 HWND           g_hwnd      = NULL;
@@ -50,6 +50,15 @@ int   g_winAlpha = 60;
 int   g_selectMode = 0;
 int   g_bgAlpha[4] = {60,60,60,60};
 int   g_bgColor[4] = {0x2A2A2A,0x2A2A2A,0x2A2A2A,0x2A2A2A};
+int   g_bgScale[4] = {100,100,100,100};
+int   g_bgOffsetX[4] = {0,0,0,0};
+int   g_bgOffsetY[4] = {0,0,0,0};
+COLORREF g_slotBgColor[4][8] = {
+    {RGB(220,80,80),RGB(70,200,70),RGB(60,120,230),RGB(230,190,50),RGB(180,60,180),RGB(60,200,200),RGB(240,140,40),RGB(90,90,95)},
+    {RGB(220,80,80),RGB(70,200,70),RGB(60,120,230),RGB(230,190,50),RGB(180,60,180),RGB(60,200,200),RGB(240,140,40),RGB(90,90,95)},
+    {RGB(220,80,80),RGB(70,200,70),RGB(60,120,230),RGB(230,190,50),RGB(180,60,180),RGB(60,200,200),RGB(240,140,40),RGB(90,90,95)},
+    {RGB(40,40,45),RGB(40,40,45),RGB(40,40,45),RGB(40,40,45),RGB(40,40,45),RGB(40,40,45),RGB(40,40,45),RGB(40,40,45)}
+};
 int   g_glowColor[4] = {0x3CB93C,0x3CB93C,0x3CB93C,0x3CB93C};
 int   g_pageColor[4] = {0x78787D,0x78787D,0x78787D,0x78787D};
 int   g_glowIntensity[4] = {100,100,100,100};
@@ -66,6 +75,7 @@ int   g_guideWidth = 2;
 HANDLE g_numpadHandle = NULL;
 char  g_numpadName[128] = {0};
 char  g_numpadDevicePath[512] = {0};
+bool  g_numpadPairing = false;
 
 COLORREF g_palette[MAX_ITEMS] = {
     RGB(220,80,80), RGB(70,200,70), RGB(60,120,230), RGB(230,190,50),
@@ -100,6 +110,44 @@ void WriteEffResult(const char *r)
     char p[MAX_PATH]; GetSettingsPath(p, sizeof(p));
     FILE *f = NULL; fopen_s(&f, p, "a");
     if (f) { fprintf(f, "save_eff_result=%s\n", r); fclose(f); }
+}
+
+void SavePairingToFile(void)
+{
+    if (!g_numpadDevicePath[0]) return;
+    char p[MAX_PATH];
+    GetSettingsPath(p, sizeof(p));
+    p[strlen(p) - 12] = 0; // remove "settings.txt"
+    _snprintf_s(p, MAX_PATH, _TRUNCATE, "%s\\numpad_pairing.cfg", p);
+    FILE *f = NULL; fopen_s(&f, p, "w");
+    if (f) {
+        fprintf(f, "numpad_device_path=%s\n", g_numpadDevicePath);
+        fclose(f);
+    }
+}
+
+void LoadNumpadPairing(void)
+{
+    g_numpadDevicePath[0] = 0;
+    g_numpadPairing = false;
+    char p[MAX_PATH];
+    GetSettingsPath(p, sizeof(p));
+    p[strlen(p) - 12] = 0;
+    _snprintf_s(p, MAX_PATH, _TRUNCATE, "%s\\numpad_pairing.cfg", p);
+    FILE *f = NULL; fopen_s(&f, p, "r");
+    if (f) {
+        char buf[1024];
+        while (fgets(buf, sizeof(buf), f)) {
+            char k[64] = {0}, v[960] = {0};
+            if (sscanf_s(buf, " %63[^=]=%959[^\r\n]", k, 64, v, 960) >= 1) {
+                if (strcmp(k, "numpad_device_path") == 0 && v[0])
+                    strncpy_s(g_numpadDevicePath, sizeof(g_numpadDevicePath), v, _TRUNCATE);
+                else if (strcmp(k, "numpad_pairing") == 0 && atoi(v) != 0)
+                    g_numpadPairing = true;
+            }
+        }
+        fclose(f);
+    }
 }
 
 bool SaveWBEFF(const char *wp, AEGP_LayerH lh)
@@ -356,6 +404,27 @@ void LoadBitmaps(void)
         }
     if (g_bgPath[g_menuType][0])
         g_bgBitmap[g_menuType] = LoadImageFile(g_bgPath[g_menuType]);
+}
+
+void DrawBackgroundWithTransform(HDC dc, int winSize)
+{
+    if (!g_bgBitmap[g_menuType]) return;
+    BITMAP bm; GetObject(g_bgBitmap[g_menuType], sizeof(bm), &bm);
+    HDC bgDc = CreateCompatibleDC(dc);
+    HBITMAP bgOb = (HBITMAP)SelectObject(bgDc, g_bgBitmap[g_menuType]);
+    SetStretchBltMode(dc, HALFTONE);
+    int sc = g_bgScale[g_menuType];
+    int dstW = winSize * sc / 100, dstH = winSize * sc / 100;
+    int ox = g_bgOffsetX[g_menuType] * winSize / 1050;
+    int oy = g_bgOffsetY[g_menuType] * winSize / 1050;
+    int srcX = (dstW > bm.bmWidth) ? 0 : (bm.bmWidth - dstW) / 2;
+    int srcY = (dstH > bm.bmHeight) ? 0 : (bm.bmHeight - dstH) / 2;
+    int srcW = (dstW > bm.bmWidth) ? bm.bmWidth : dstW;
+    int srcH = (dstH > bm.bmHeight) ? bm.bmHeight : dstH;
+    int dstX = (winSize - dstW) / 2 + ox;
+    int dstY = (winSize - dstH) / 2 + oy;
+    StretchBlt(dc, dstX, dstY, dstW, dstH, bgDc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+    SelectObject(bgDc, bgOb); DeleteDC(bgDc);
 }
 
 void ApplyEffect(const char *matchName)
@@ -828,8 +897,9 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                 if (ri->header.dwType == RIM_TYPEKEYBOARD) {
                     HANDLE dev = ri->header.hDevice;
                     WORD vk = ri->data.keyboard.VKey;
-                    // Auto-enable on first detected numpad key press
-                    if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) g_numpadEnabled = true;
+                    // Numpad keys auto-enable interception
+                    if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9 || vk == VK_RETURN || vk == VK_ADD || vk == VK_SUBTRACT || vk == VK_MULTIPLY || vk == VK_DIVIDE)
+                        g_numpadEnabled = true;
                     if (!g_numpadEnabled) { free(ri); return 0; }
                     // Check if this device matches the configured numpad
                     bool match = false;
@@ -838,16 +908,21 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                         GetDevicePath(dev, devPath, sizeof(devPath));
                         match = (strcmp(devPath, g_numpadDevicePath) == 0);
                         if (match) g_numpadHandle = dev;
-                    } else {
-                        // Auto-detect: first numpad key press identifies the device
-                        if (!g_numpadHandle && vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) {
+                    } else if (g_numpadPairing) {
+                        // Pairing mode: first numpad key from any device pairs it
+                        if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) {
                             g_numpadHandle = dev;
                             GetDevicePath(dev, g_numpadDevicePath, sizeof(g_numpadDevicePath));
+                            g_numpadPairing = false;
                             BOOL up = (ri->data.keyboard.Flags & RI_KEY_BREAK);
                             if (!up) {
-                                MessageBoxA(NULL, "Numpad paired! Press numpad Enter now to open Quick Menu.", "PieMenu", MB_OK | MB_ICONINFORMATION);
+                                MessageBoxA(NULL, "Numpad paired! You can now use numpad Enter to open menus.", "PieMenu", MB_OK | MB_ICONINFORMATION);
                             }
+                            SavePairingToFile();
                         }
+                        match = (dev == g_numpadHandle);
+                    } else {
+                        // Not paired yet — do NOT auto-detect, do NOT match Enter
                         match = (dev == g_numpadHandle);
                     }
                     if (match) {
@@ -865,19 +940,18 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                             }
                             free(ri); return 0; // also consume key-up
                         }
-                        // Numpad 0-9 → F13-F21, or grid select when quick grid menu is showing
+                        // Numpad 0-9 → select grid slot, or fallback to F13-F21
                         if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) {
                             BOOL up = (ri->data.keyboard.Flags & RI_KEY_BREAK);
                             if (g_hwnd && g_menuType == MENU_QUICK && g_quickStyle == 1) {
                                 if (!up) {
-                                    // Map numpad key layout to grid item indices:
-                                    // 7=0,8=1,9=2,4=3,5=4,6=5,1=6,2=7,3=8,0=9
                                     static const int numpadToGrid[] = {9,6,7,8,3,4,5,0,1,2};
                                     int gi = numpadToGrid[vk - VK_NUMPAD0];
                                     if (gi < g_itemCount) SelectItem(gi);
                                 }
                                 free(ri); return 0;
                             }
+                            // non-grid: forward as F13-F21
                             int idx = vk - VK_NUMPAD0;
                             WORD fKey = VK_F13 + idx;
                             INPUT in[2] = {0};
@@ -887,9 +961,18 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
                             SendInput(2, in, sizeof(INPUT));
                             free(ri); return 0;
                         }
-                        // Numpad +/- → page turn when grid menu is showing
+                        // Numpad extras when grid menu is showing
                         if (g_hwnd && g_menuType == MENU_QUICK && g_quickStyle == 1) {
                             BOOL up = (ri->data.keyboard.Flags & RI_KEY_BREAK);
+                            if (!up) {
+                                int gi = -1;
+                                if (vk == VK_DIVIDE)   gi = 10;  // / keypad
+                                if (vk == VK_MULTIPLY) gi = 11;  // * keypad
+                                if (vk == VK_BACK)     gi = 12;  // Backspace
+                                if (vk == VK_DELETE)   gi = 13;  // Del
+                                if (gi >= 0 && gi < g_itemCount) { SelectItem(gi); free(ri); return 0; }
+                            }
+                            // Page turn: +/- keys
                             if (!up) {
                                 if (vk == VK_ADD || vk == VK_MULTIPLY) { GotoPage(g_curPage + 1); free(ri); return 0; }
                                 if (vk == VK_SUBTRACT || vk == VK_DIVIDE) { GotoPage(g_curPage - 1); free(ri); return 0; }
@@ -906,16 +989,23 @@ LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l)
 
 void ShowMenu(void)
 {
-    if (g_hwnd) return;
-    CoInitialize(NULL);
-    LoadSettings();
+    // Allow repeat: if numpad-triggered and old window exists, destroy it first
+    if (g_hwnd) {
+        if (g_numpadTriggered) {
+            HWND h = g_hwnd; g_hwnd = NULL; g_hover = -1; DestroyWindow(h);
+        } else {
+            return;
+        }
+    }
     // Numpad Enter trigger: override menu type and force click mode (no release-to-select)
     if (g_numpadTriggered && g_numpadEnterAction >= 1 && g_numpadEnterAction <= 4) {
         static const int actionToMenu[] = {0, 1, 2, 0, 3}; // 1=Quick,2=Wheel,3=Pie,4=Infinite
         g_menuType = actionToMenu[g_numpadEnterAction];
         g_selectMode = 0;
+        if (g_menuType == MENU_QUICK) { g_quickStyle = 1; if (g_quickCount < 14) g_quickCount = 14; } // numpad grid
     }
     int ws = WIN_SIZE_BASE * g_menuScale[g_menuType] / 100;
+    if (g_menuType == MENU_QUICK && g_quickStyle == 1) ws = 380;
     int ct = ws / 2;
     switch (g_menuType) {
         case MENU_PIE:   g_itemCount = g_pieCount; break;

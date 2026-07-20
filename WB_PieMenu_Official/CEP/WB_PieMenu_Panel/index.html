@@ -157,12 +157,31 @@
                 <button id="settingsCloseBtn" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;">&times;</button>
             </div>
             <div class="modal-body">
-                <div style="margin-bottom:8px;font-size:11px;color:#888;display:flex;align-items:center;gap:6px;">
-                    <span>当前菜单:</span>
-                    <span id="currentMenuLabel" style="font-weight:bold;color:#8c8;">Pie</span>
-                    <span style="color:#555;">— 设置仅影响当前菜单</span>
+                <!-- Settings Tab Bar -->
+                <div class="settings-tabs" style="display:flex;gap:2px;margin-bottom:8px;border-bottom:1px solid #333;">
+                    <button class="settings-tab active" data-settings-tab="general">General</button>
+                    <button class="settings-tab" data-settings-tab="pie">Pie</button>
+                    <button class="settings-tab" data-settings-tab="quick">Quick</button>
+                    <button class="settings-tab" data-settings-tab="wheel">Wheel</button>
+                    <button class="settings-tab" data-settings-tab="infinite">Infinite</button>
                 </div>
-                <div class="section-global">
+
+                <!-- General Tab -->
+                <div class="settings-tab-content" data-settings-tab="general">
+                    <div class="section-row">
+                        <label data-lang="uiZoom">UI Zoom</label>
+                        <div class="slider-row">
+                            <input id="uiZoomSliderSettings" type="range" min="100" max="200" step="5" value="100">
+                            <span id="uiZoomValueSettings" class="slider-value">100</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="winAlpha">Win Opacity</label>
+                        <div class="slider-row">
+                            <input id="winAlphaSlider" type="range" min="0" max="100" step="5" value="60">
+                            <span id="winAlphaValue" class="slider-value">60</span>
+                        </div>
+                    </div>
                     <div class="section-row">
                         <label data-lang="trigger">Trigger</label>
                         <div class="hotkey-row">
@@ -185,16 +204,6 @@
                         </div>
                     </div>
                     <div class="section-row">
-                        <label data-lang="numpad">Numpad</label>
-                        <div class="switch-row">
-                            <label class="switch">
-                                <input id="numpadToggle" type="checkbox">
-                                <span class="slider-round"></span>
-                            </label>
-                            <span class="hint" data-lang="numpadHint">F13-F22 (requires pairing)</span>
-                        </div>
-                    </div>
-                    <div class="section-row">
                         <label data-lang="selectMode">Select Mode</label>
                         <div class="radio-row" id="selectModeRow">
                             <label class="radio-label">
@@ -207,210 +216,364 @@
                             </label>
                         </div>
                     </div>
-                </div>
-                <div class="collapsible">
-                    <div class="collapsible-header" data-target="pieMenuSection">
-                        <span class="collapse-icon">&#9660;</span>
-                        <span data-lang="pieMenu">Pie Menu</span>
+                    <div class="section-row">
+                        <label data-lang="numpad">Numpad</label>
+                        <div style="display:flex;gap:6px;flex:1;align-items:center;">
+                            <label class="switch" style="flex-shrink:0;">
+                                <input id="numpadToggle" type="checkbox">
+                                <span class="slider-round"></span>
+                            </label>
+                            <span class="hint" data-lang="numpadHint" style="flex:1;">external keypad Enter</span>
+                            <button id="pairNumpadBtn" class="btn-small" style="color:#4c4;flex-shrink:0;">Re-pair</button>
+                        </div>
                     </div>
-                    <div id="pieMenuSection" class="collapsible-body">
-                        <div class="section-row">
-                            <label data-lang="winAlpha">Win Opacity</label>
-                            <div class="slider-row">
-                                <input id="winAlphaSlider" type="range" min="0" max="100" step="5" value="60">
-                                <span id="winAlphaValue" class="slider-value">60</span>
+                    <div class="collapsible" style="border:1px solid #333;border-radius:3px;margin-top:8px;">
+                        <div class="collapsible-header" data-target="guideSectionSettings" style="padding:4px 8px;font-size:11px;">
+                            <span class="collapse-icon">&#9660;</span>
+                            <span data-lang="guide">Guide Line</span>
+                        </div>
+                        <div id="guideSectionSettings" class="collapsible-body" style="padding:6px 8px;">
+                            <div class="section-row">
+                                <label data-lang="guide">Guide</label>
+                                <div class="switch-row">
+                                    <label class="switch">
+                                        <input id="guideToggle" type="checkbox">
+                                        <span class="slider-round"></span>
+                                    </label>
+                                    <span class="hint" data-lang="guideHint">Line from center to cursor</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label data-lang="width">Width</label>
+                                <div class="slider-row">
+                                    <input id="guideWidthSlider" type="range" min="1" max="6" step="1" value="2">
+                                    <span id="guideWidthValue" class="slider-value">2</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label data-lang="color">Color</label>
+                                <div class="slider-row">
+                                    <input id="guideColorInput" type="color" value="#c0c0c0" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                                    <span id="guideColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#C0C0C0</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="section-row">
-                            <label data-lang="bgAlpha">Bg Alpha</label>
-                            <div class="slider-row">
-                                <input id="bgAlphaSlider" type="range" min="0" max="100" step="5" value="60">
-                                <span id="bgAlphaValue" class="slider-value">60</span>
-                            </div>
+                    </div>
+                    <div class="collapsible" style="border:1px solid #333;border-radius:3px;margin-top:8px;">
+                        <div class="collapsible-header collapsed" data-target="flowboardSectionSettings" style="padding:4px 8px;font-size:11px;">
+                            <span class="collapse-icon">&#9660;</span>
+                            <span>FlowBoard</span>
                         </div>
-                        <div class="section-row">
-                            <label data-lang="bgColor">Bg Color</label>
-                            <div class="slider-row">
-                                <input id="bgColorInput" type="color" value="#2a2a2a" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
-                                <span id="bgColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#2A2A2A</span>
+                        <div id="flowboardSectionSettings" class="collapsible-body collapsed" style="padding:6px 8px;">
+                            <div class="section-row">
+                                <label data-lang="state">State</label>
+                                <div style="display:flex;gap:6px;flex:1;">
+                                    <button id="fbSaveBtn" class="btn-small" style="flex:1;" data-lang="saveState">Save</button>
+                                    <button id="fbLoadBtn" class="btn-small" style="flex:1;" data-lang="loadState">Load</button>
+                                    <button id="fbGenBtn" class="btn-small" style="flex:1;color:#4c4;" data-lang="generate">Generate</button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="glowColor">Glow Color</label>
-                            <div class="slider-row">
-                                <input id="glowColorInput" type="color" value="#3cb93c" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
-                                <span id="glowColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#3CB93C</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="glowIntensity">Glow Intensity</label>
-                            <div class="slider-row">
-                                <input id="glowIntensitySlider" type="range" min="0" max="200" step="5" value="100">
-                                <span id="glowIntensityValue" class="slider-value">100</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="pageColor">Page Color</label>
-                            <div class="slider-row">
-                                <input id="pageColorInput" type="color" value="#78787d" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
-                                <span id="pageColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#78787D</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="imgDist">Icon Dist</label>
-                            <div class="slider-row">
-                                <input id="imgDistSlider" type="range" min="20" max="80" step="5" value="45">
-                                <span id="imgDistValue" class="slider-value">45</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="textDist">Text Dist</label>
-                            <div class="slider-row">
-                                <input id="textDistSlider" type="range" min="30" max="90" step="5" value="85">
-                                <span id="textDistValue" class="slider-value">85</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="textSize">Text Size</label>
-                            <div class="slider-row">
-                                <input id="textSizeSlider" type="range" min="50" max="150" step="5" value="100">
-                                <span id="textSizeValue" class="slider-value">100%</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="menuScale">Menu Scale</label>
-                            <div class="slider-row">
-                                <input id="menuScaleSlider" type="range" min="50" max="150" step="10" value="100">
-                                <span id="menuScaleValue" class="slider-value">100%</span>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="pieCount">Pie Sectors</label>
-                            <div class="slider-row">
-                                <select id="pieCountSelect" class="field-select">
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4" selected>4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="section-row">
-                            <label data-lang="quickCount">Quick Slots</label>
-                            <div class="slider-row">
-                                <select id="quickCountSelect" class="field-select">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6" selected>6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="section-row" id="wheelCountRow">
-                            <label data-lang="wheelCount">Wheel Slots</label>
-                            <div class="slider-row">
-                                <select id="wheelCountSelect" class="field-select">
-                                    <option value="4">4</option>
-                                    <option value="6">6</option>
-                                    <option value="8" selected>8</option>
-                                </select>
+                            <div class="section-row">
+                                <label data-lang="recent">Recent</label>
+                                <div style="display:flex;gap:6px;flex:1;">
+                                    <select id="fbRecentSelect" class="field-select" style="flex:1;">
+                                        <option value="">(none)</option>
+                                    </select>
+                                    <button id="fbApplyBtn" class="btn-small" data-lang="apply">Apply</button>
+                                    <button id="fbDelBtn" class="btn-small" style="color:#c55;">Del</button>
+                                    <button id="cleanSlotsBtn" class="btn-small" style="color:#fa5;">清理P/Q/W</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="collapsible">
-                    <div class="collapsible-header collapsed" data-target="guideSection">
-                        <span class="collapse-icon">&#9660;</span>
-                        <span>Guide Line</span>
+
+                <!-- Pie Tab -->
+                <div class="settings-tab-content" data-settings-tab="pie" style="display:none;">
+                    <div class="section-row">
+                        <label data-lang="pieCount">Pie Sectors</label>
+                        <select id="pieCountSelect" class="field-select" style="width:80px;">
+                            <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+                            <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                        </select>
                     </div>
-                    <div id="guideSection" class="collapsible-body collapsed">
-                        <div class="section-row">
-                            <label data-lang="guide">Guide Line</label>
-                            <div class="switch-row">
-                                <label class="switch">
-                                    <input id="guideToggle" type="checkbox">
-                                    <span class="slider-round"></span>
-                                </label>
-                                <span class="hint" data-lang="guideHint">Line from center to cursor</span>
-                            </div>
+                    <div class="section-row">
+                        <label data-lang="bgAlpha">Bg Alpha</label>
+                        <div class="slider-row">
+                            <input id="bgAlphaSlider0" type="range" min="0" max="100" step="5" value="60">
+                            <span id="bgAlphaValue0" class="slider-value">60</span>
                         </div>
-                        <div class="section-row">
-                            <label data-lang="width">Width</label>
-                            <div class="slider-row">
-                                <input id="guideWidthSlider" type="range" min="1" max="6" step="1" value="2">
-                                <span id="guideWidthValue" class="slider-value">2</span>
-                            </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="bgColor">Bg Color</label>
+                        <div class="slider-row">
+                            <input id="bgColorInput0" type="color" value="#2a2a2a" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                            <span id="bgColorText0" class="slider-value" style="font-family:Consolas;margin-left:6px;">#2A2A2A</span>
                         </div>
-                        <div class="section-row">
-                            <label data-lang="color">Color</label>
-                            <div class="slider-row">
-                                <input id="guideColorInput" type="color" value="#c0c0c0" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
-                                <span id="guideColorText" class="slider-value" style="font-family:Consolas;margin-left:6px;">#C0C0C0</span>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="glowColor">Glow Color</label>
+                        <div class="slider-row">
+                            <input id="glowColorInput0" type="color" value="#3cb93c" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                            <span id="glowColorText0" class="slider-value" style="font-family:Consolas;margin-left:6px;">#3CB93C</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="glowIntensity">Glow Intensity</label>
+                        <div class="slider-row">
+                            <input id="glowIntensitySlider0" type="range" min="0" max="200" step="5" value="100">
+                            <span id="glowIntensityValue0" class="slider-value">100</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="pageColor">Page Color</label>
+                        <div class="slider-row">
+                            <input id="pageColorInput0" type="color" value="#78787d" style="width:40px;height:30px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;">
+                            <span id="pageColorText0" class="slider-value" style="font-family:Consolas;margin-left:6px;">#78787D</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="imgDist">Icon Dist</label>
+                        <div class="slider-row">
+                            <input id="imgDistSlider0" type="range" min="20" max="80" step="5" value="45">
+                            <span id="imgDistValue0" class="slider-value">45</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="textDist">Text Dist</label>
+                        <div class="slider-row">
+                            <input id="textDistSlider0" type="range" min="30" max="90" step="5" value="85">
+                            <span id="textDistValue0" class="slider-value">85</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="textSize">Text Size</label>
+                        <div class="slider-row">
+                            <input id="textSizeSlider0" type="range" min="50" max="150" step="5" value="100">
+                            <span id="textSizeValue0" class="slider-value">100%</span>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="menuScale">Menu Scale</label>
+                        <div class="slider-row">
+                            <input id="menuScaleSlider0" type="range" min="50" max="150" step="10" value="100">
+                            <span id="menuScaleValue0" class="slider-value">100%</span>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Slot Colors</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div id="slotColorsGrid0" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Background Image</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div class="section-row">
+                                <label data-lang="browse">Path</label>
+                                <div style="flex:1;display:flex;gap:4px;align-items:center;">
+                                    <input id="pieBgPath" type="text" placeholder="path to background image..." style="flex:1;background:#1e1e1e;border:1px solid #444;color:#ccc;padding:3px 6px;border-radius:2px;font-size:11px;">
+                                    <button id="pieBgBrowse" class="btn-small">Browse</button>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Scale</label>
+                                <div class="slider-row">
+                                    <input id="pieBgScale" type="range" min="50" max="200" step="10" value="100">
+                                    <span id="pieBgScaleV" class="slider-value">100%</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset X</label>
+                                <div class="slider-row">
+                                    <input id="pieBgOx" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="pieBgOxV" class="slider-value">0</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset Y</label>
+                                <div class="slider-row">
+                                    <input id="pieBgOy" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="pieBgOyV" class="slider-value">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="collapsible">
-                    <div class="collapsible-header collapsed" data-target="cepSection">
-                        <span class="collapse-icon">&#9660;</span>
-                        <span data-lang="cep">CEP Panel</span>
+
+                <!-- Quick Tab -->
+                <div class="settings-tab-content" data-settings-tab="quick" style="display:none;">
+                    <div class="section-row" id="quickCountRow">
+                        <label data-lang="quickCount">Quick Slots</label>
+                        <select id="quickCountSelect" class="field-select" style="width:80px;">
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6" selected>6</option>
+                            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            <option value="10">10</option><option value="11">11</option>
+                            <option value="12">12</option><option value="13">13</option><option value="14">14</option>
+                        </select>
                     </div>
-                    <div id="cepSection" class="collapsible-body collapsed">
-                        <div class="section-row">
-                            <label data-lang="uiZoom">UI Zoom</label>
-                            <div class="slider-row">
-                                <input id="uiZoomSlider" type="range" min="100" max="200" step="5" value="100">
-                                <span id="uiZoomValue" class="slider-value">100</span>
+                    <div class="section-row">
+                        <label>Quick Style</label>
+                        <select id="quickStyleSelect" class="field-select" style="width:80px;">
+                            <option value="0">Vertical</option>
+                            <option value="1">Numpad Grid</option>
+                        </select>
+                    </div>
+                    <div class="section-row">
+                        <label data-lang="menuScale">Menu Scale</label>
+                        <div class="slider-row">
+                            <input id="menuScaleSlider1" type="range" min="50" max="150" step="10" value="100">
+                            <span id="menuScaleValue1" class="slider-value">100%</span>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Slot Colors</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div id="slotColorsGrid1" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Background Image</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div class="section-row">
+                                <label data-lang="browse">Path</label>
+                                <div style="flex:1;display:flex;gap:4px;align-items:center;">
+                                    <input id="quickBgPath" type="text" placeholder="path to background image..." style="flex:1;background:#1e1e1e;border:1px solid #444;color:#ccc;padding:3px 6px;border-radius:2px;font-size:11px;">
+                                    <button id="quickBgBrowse" class="btn-small">Browse</button>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Scale</label>
+                                <div class="slider-row">
+                                    <input id="quickBgScale" type="range" min="50" max="200" step="10" value="100">
+                                    <span id="quickBgScaleV" class="slider-value">100%</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset X</label>
+                                <div class="slider-row">
+                                    <input id="quickBgOx" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="quickBgOxV" class="slider-value">0</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset Y</label>
+                                <div class="slider-row">
+                                    <input id="quickBgOy" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="quickBgOyV" class="slider-value">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="collapsible">
-                    <div class="collapsible-header collapsed" data-target="flowboardSection">
-                        <span class="collapse-icon">&#9660;</span>
-                        <span>FlowBoard</span>
+
+                <!-- Wheel Tab -->
+                <div class="settings-tab-content" data-settings-tab="wheel" style="display:none;">
+                    <div class="section-row">
+                        <label data-lang="wheelCount">Wheel Slots</label>
+                        <select id="wheelCountSelect" class="field-select" style="width:80px;">
+                            <option value="4">4</option>
+                            <option value="6">6</option>
+                            <option value="8" selected>8</option>
+                        </select>
                     </div>
-                    <div id="flowboardSection" class="collapsible-body collapsed" style="padding:8px;">
-                        <div class="section-row">
-                            <label data-lang="state">State</label>
-                            <div style="display:flex;gap:6px;flex:1;">
-                                <button id="fbSaveBtn" class="btn-small" style="flex:1;" data-lang="saveState">Save</button>
-                                <button id="fbLoadBtn" class="btn-small" style="flex:1;" data-lang="loadState">Load</button>
-                                <button id="fbGenBtn" class="btn-small" style="flex:1;color:#4c4;" data-lang="generate">Generate</button>
-                            </div>
+                    <div class="section-row">
+                        <label data-lang="menuScale">Menu Scale</label>
+                        <div class="slider-row">
+                            <input id="menuScaleSlider2" type="range" min="50" max="150" step="10" value="100">
+                            <span id="menuScaleValue2" class="slider-value">100%</span>
                         </div>
-                        <div class="section-row">
-                            <label data-lang="recent">Recent</label>
-                            <div style="display:flex;gap:6px;flex:1;">
-                                <select id="fbRecentSelect" class="field-select" style="flex:1;">
-                                    <option value="">(none)</option>
-                                </select>
-                                <button id="fbApplyBtn" class="btn-small" data-lang="apply">Apply</button>
-                                <button id="fbDelBtn" class="btn-small" style="color:#c55;">Del</button>
-                                <button id="cleanSlotsBtn" class="btn-small" style="color:#fa5;">清理P/Q/W</button>
-                                <button id="cleanSlotsBtn" class="btn-small" style="color:#fa5;">清理</button>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Slot Colors</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div id="slotColorsGrid2" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Background Image</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div class="section-row">
+                                <label data-lang="browse">Path</label>
+                                <div style="flex:1;display:flex;gap:4px;align-items:center;">
+                                    <input id="wheelBgPath" type="text" placeholder="path to background image..." style="flex:1;background:#1e1e1e;border:1px solid #444;color:#ccc;padding:3px 6px;border-radius:2px;font-size:11px;">
+                                    <button id="wheelBgBrowse" class="btn-small">Browse</button>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Scale</label>
+                                <div class="slider-row">
+                                    <input id="wheelBgScale" type="range" min="50" max="200" step="10" value="100">
+                                    <span id="wheelBgScaleV" class="slider-value">100%</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset X</label>
+                                <div class="slider-row">
+                                    <input id="wheelBgOx" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="wheelBgOxV" class="slider-value">0</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset Y</label>
+                                <div class="slider-row">
+                                    <input id="wheelBgOy" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="wheelBgOyV" class="slider-value">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="collapsible">
-                    <div class="collapsible-header collapsed" data-target="aboutSection">
-                        <span class="collapse-icon">&#9660;</span>
-                        <span data-lang="about">About</span>
+
+                <!-- Infinite Tab -->
+                <div class="settings-tab-content" data-settings-tab="infinite" style="display:none;">
+                    <div class="section-row">
+                        <label data-lang="menuScale">Menu Scale</label>
+                        <div class="slider-row">
+                            <input id="menuScaleSlider3" type="range" min="50" max="150" step="10" value="100">
+                            <span id="menuScaleValue3" class="slider-value">100%</span>
+                        </div>
                     </div>
-                    <div id="aboutSection" class="collapsible-body collapsed" style="padding:8px;font-size:11px;color:#888;line-height:1.6;">
-                         <div><b>WB Menu Suite</b> &mdash; Version 0.1.0</div>
-                         <div>vibe coding作者: whitebeaver</div>
-                         <div>本项目完全免费，由Trae与Deepseek V4.0 Flash版本生成，完全AI，绝无人工要素</div>
-                     </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header" style="cursor:pointer;font-size:11px;color:#888;padding:4px 0;user-select:none;">&#9654; Background Image</div>
+                        <div class="collapsible-body" style="display:none;padding:4px 0;">
+                            <div class="section-row">
+                                <label data-lang="browse">Path</label>
+                                <div style="flex:1;display:flex;gap:4px;align-items:center;">
+                                    <input id="infiniteBgPath" type="text" placeholder="path to background image..." style="flex:1;background:#1e1e1e;border:1px solid #444;color:#ccc;padding:3px 6px;border-radius:2px;font-size:11px;">
+                                    <button id="infiniteBgBrowse" class="btn-small">Browse</button>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Scale</label>
+                                <div class="slider-row">
+                                    <input id="infiniteBgScale" type="range" min="50" max="200" step="10" value="100">
+                                    <span id="infiniteBgScaleV" class="slider-value">100%</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset X</label>
+                                <div class="slider-row">
+                                    <input id="infiniteBgOx" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="infiniteBgOxV" class="slider-value">0</span>
+                                </div>
+                            </div>
+                            <div class="section-row">
+                                <label>Offset Y</label>
+                                <div class="slider-row">
+                                    <input id="infiniteBgOy" type="range" min="-300" max="300" step="10" value="0">
+                                    <span id="infiniteBgOyV" class="slider-value">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About section always visible at bottom -->
+                <div class="settings-tab-content" style="margin-top:8px;padding-top:8px;border-top:1px solid #333;font-size:11px;color:#888;line-height:1.6;">
+                    <div><b>WB Menu Suite</b> &mdash; Version 0.1.2</div>
+                    <div>vibe coding by whitebeaver via Trae + Deepseek</div>
                 </div>
             </div>
         </div>
@@ -437,9 +600,22 @@
                 <div class="section-row"><label>动作</label><select id="infEditAction" class="field-select" style="flex:1;"><option value="0">应用效果</option><option value="1">运行脚本</option><option value="2">打开链接</option><option value="3">无操作</option></select></div>
             </div>
             <div class="modal-footer" style="padding:8px 12px;border-top:1px solid #333;text-align:right;">
-                <button id="infModalSave" style="background:#3cb93c;border:none;color:#111;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-weight:600;">保存</button>
+                <button id="infModalSave" style="background:#3a6b3a;border:1px solid #4a8a4a;color:#ccc;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-weight:600;">保存</button>
                 <button id="clearAllSlotsBtn" style="background:#6a3030;border:none;color:#ddd;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;">全部清除</button>
             </div>
+        </div>
+    </div>
+    <div id="sizePreviewOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;cursor:pointer;">
+        <div id="sizePreviewFrame" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <canvas id="sizePreviewCanvas" style="display:block;"></canvas>
+        </div>
+        <div id="sizePreviewLabel" style="position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:#222;color:#aaa;padding:6px 14px;border-radius:4px;font-size:12px;font-family:monospace;border:1px solid #444;pointer-events:none;"></div>
+        <div id="sizePreviewCal" style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:auto;">
+            <span style="color:#888;font-size:11px;">Calibrate:</span>
+            <button class="cal-btn" data-delta="-0.05" style="background:#444;border:1px solid #666;color:#ccc;padding:2px 10px;border-radius:3px;cursor:pointer;font-size:12px;">&minus;</button>
+            <span id="calZoomDisplay" style="color:#aaa;font-size:12px;font-family:monospace;min-width:40px;text-align:center;">1.00</span>
+            <button class="cal-btn" data-delta="+0.05" style="background:#444;border:1px solid #666;color:#ccc;padding:2px 10px;border-radius:3px;cursor:pointer;font-size:12px;">+</button>
+            <button class="cal-btn" data-delta="0" style="background:#333;border:1px solid #555;color:#888;padding:2px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Reset</button>
         </div>
     </div>
     <script src="js/settings.js"></script>

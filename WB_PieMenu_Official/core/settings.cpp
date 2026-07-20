@@ -99,9 +99,29 @@ void SetVal(const char *key, const char *val)
     else if (strcmp(key, "quick_bg_path") == 0) { strncpy_s(g_bgPath[1], MAX_PATH, val, _TRUNCATE); return; }
     else if (strcmp(key, "wheel_bg_path") == 0) { strncpy_s(g_bgPath[2], MAX_PATH, val, _TRUNCATE); return; }
     else if (strcmp(key, "infinite_bg_path") == 0) { strncpy_s(g_bgPath[3], MAX_PATH, val, _TRUNCATE); return; }
-    else if (strcmp(key, "numpad_handle") == 0) { g_numpadHandle = (HANDLE)(INT_PTR)_strtoui64(val, NULL, 16); return; }
-    else if (strcmp(key, "numpad_name") == 0) { strncpy_s(g_numpadName, sizeof(g_numpadName), val, _TRUNCATE); return; }
-    else if (strcmp(key, "numpad_device_path") == 0) { strncpy_s(g_numpadDevicePath, sizeof(g_numpadDevicePath), val, _TRUNCATE); return; }
+    else if (strcmp(key, "bg_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 200) { for (int z=0;z<4;z++) g_bgScale[z]=n; } return; }
+    else if (strcmp(key, "pie_bg_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 200) g_bgScale[0] = n; return; }
+    else if (strcmp(key, "quick_bg_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 200) g_bgScale[1] = n; return; }
+    else if (strcmp(key, "wheel_bg_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 200) g_bgScale[2] = n; return; }
+    else if (strcmp(key, "infinite_bg_scale") == 0) { int n = atoi(val); if (n >= 50 && n <= 200) g_bgScale[3] = n; return; }
+    else if (strcmp(key, "pie_bg_ox") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetX[0] = n; return; }
+    else if (strcmp(key, "quick_bg_ox") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetX[1] = n; return; }
+    else if (strcmp(key, "wheel_bg_ox") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetX[2] = n; return; }
+    else if (strcmp(key, "infinite_bg_ox") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetX[3] = n; return; }
+    else if (strcmp(key, "pie_bg_oy") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetY[0] = n; return; }
+    else if (strcmp(key, "quick_bg_oy") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetY[1] = n; return; }
+    else if (strcmp(key, "wheel_bg_oy") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetY[2] = n; return; }
+    else if (strcmp(key, "infinite_bg_oy") == 0) { int n = atoi(val); if (n >= -500 && n <= 500) g_bgOffsetY[3] = n; return; }
+    else if (strncmp(key, "slot_bg_color_", 14) == 0) {
+        int mi = 0, si = 0;
+        if (sscanf_s(key + 14, "%d_%d", &mi, &si) >= 2 && mi >= 0 && mi < 4 && si >= 0 && si < 8) {
+            unsigned int c;
+            if (sscanf_s(val, "%x", &c) >= 1) {
+                g_slotBgColor[mi][si] = RGB((c>>16)&0xFF,(c>>8)&0xFF,c&0xFF);
+            }
+        }
+        return;
+    }
     else if (strcmp(key, "item_count") == 0) { int n = atoi(val); if (n >= 2 && n <= 8) g_pieCount = n; return; }
     else if (strcmp(key, "save_eff_path") == 0) { strncpy_s(g_saveEffPath, sizeof(g_saveEffPath), val, _TRUNCATE); return; }
     else if (strcmp(key, "apply_eff_path") == 0) { strncpy_s(g_applyEffPath, sizeof(g_applyEffPath), val, _TRUNCATE); return; }
@@ -158,6 +178,7 @@ void LoadSettings(void)
         if (sscanf_s(line, " %63[^=]=%959[^\r\n]", k, 64, v, 960) >= 1) SetVal(k, v);
     }
     fclose(f);
+    LoadNumpadPairing();
 }
 
 void WriteSection(FILE *f, const char *prefix, int pages, int count)

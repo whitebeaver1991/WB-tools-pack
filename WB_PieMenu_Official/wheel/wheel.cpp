@@ -14,6 +14,7 @@ void DrawWheel(HDC hdc)
     HBITMAP bmp = CreateCompatibleBitmap(hdc, ws, ws);
     HBITMAP old = (HBITMAP)SelectObject(dc, bmp);
     FillRect(dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    DrawBackgroundWithTransform(dc, ws);
     SetBkMode(dc, TRANSPARENT);
 
     HFONT font = CreateFontA(30, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Microsoft YaHei");
@@ -45,7 +46,8 @@ void DrawWheel(HDC hdc)
                 by = arms[a].y;
             }
             RECT r = {bx, by, bx + bw, by + bh};
-            HBRUSH br = CreateSolidBrush(hover ? RGB(60,60,65) : RGB(40,40,45));
+            COLORREF wsc = g_slotBgColor[g_menuType][slotIdx % 8];
+            HBRUSH br = CreateSolidBrush(hover ? RGB(min(255,GetRValue(wsc)+20),min(255,GetGValue(wsc)+20),min(255,GetBValue(wsc)+20)) : wsc);
             FillRect(dc, &r, br); DeleteObject(br);
             HPEN bp = CreatePen(PS_SOLID, 1, hover ? RGB(255,255,255) : RGB(70,70,75));
             SelectObject(dc, bp); SelectObject(dc, GetStockObject(HOLLOW_BRUSH));

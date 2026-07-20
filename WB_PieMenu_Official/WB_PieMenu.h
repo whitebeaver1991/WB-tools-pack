@@ -65,7 +65,7 @@ enum ActionType { ACTION_APPLY_EFFECT = 0, ACTION_SCRIPT = 1, ACTION_URL = 2, AC
 
 struct HitArea { int sector, ring, sub; double a0, a1; int r0, r1; };
 
-extern AEGP_Command   S_pi_cmd[6];
+extern AEGP_Command   S_pi_cmd[8];
 extern AEGP_PluginID  S_id;
 extern SPBasicSuite   *sP;
 extern HWND           g_hwnd;
@@ -114,6 +114,10 @@ extern int   g_winAlpha;
 extern int   g_selectMode;
 extern int   g_bgAlpha[4];
 extern int   g_bgColor[4];
+extern int   g_bgScale[4];
+extern int   g_bgOffsetX[4];
+extern int   g_bgOffsetY[4];
+extern COLORREF g_slotBgColor[4][8]; // per-menu-type, slot 0-7 bg colors (Pie/Quick/Wheel)
 extern int   g_glowColor[4];
 extern int   g_pageColor[4];
 extern int   g_glowIntensity[4];
@@ -130,6 +134,7 @@ extern int   g_guideWidth;
 extern HANDLE g_numpadHandle;
 extern char  g_numpadName[128];
 extern char  g_numpadDevicePath[512];
+extern bool  g_numpadPairing;
 
 extern COLORREF g_palette[MAX_ITEMS];
 extern HBRUSH   g_brushes[MAX_ITEMS];
@@ -156,6 +161,7 @@ extern char  g_svPath[MAX_PATH];
 extern bool  g_dumpEffectsPending;
 
 void GetSettingsPath(char *buf, int sz);
+void DrawBackgroundWithTransform(HDC dc, int winSize);
 void DefaultsForMenu(int m);
 void SetVal(const char *key, const char *val);
 void LoadSettings(void);
@@ -193,6 +199,8 @@ void DrawImageSector(HDC dc, int idx);
 int HitTestSector(int mx, int my);
 int HitTestSectorExtended(int mx, int my);
 void InitRawWindow(void);
+void SavePairingToFile(void);
+void LoadNumpadPairing(void);
 LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
 
 void DrawPie(HDC hdc);

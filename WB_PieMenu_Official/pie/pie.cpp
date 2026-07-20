@@ -13,23 +13,9 @@ void DrawPie(HDC hdc)
     HBITMAP bmp = CreateCompatibleBitmap(hdc, ws, ws);
     HBITMAP old = (HBITMAP)SelectObject(dc, bmp);
     FillRect(dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
-    // Draw background image if available
-    if (g_bgBitmap[g_menuType]) {
-        BITMAP bm; GetObject(g_bgBitmap[g_menuType], sizeof(bm), &bm);
-        HDC bgDc = CreateCompatibleDC(dc);
-        HBITMAP bgOb = (HBITMAP)SelectObject(bgDc, g_bgBitmap[g_menuType]);
-        SetStretchBltMode(dc, HALFTONE);
-        StretchBlt(dc, 0, 0, ws, ws, bgDc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
-        SelectObject(bgDc, bgOb); DeleteDC(bgDc);
-    }
+    DrawBackgroundWithTransform(dc, ws);
     SetBkMode(dc, TRANSPARENT);
     HPEN np = CreatePen(PS_NULL, 0, 0);
-
-    HBRUSH secBr = CreateSolidBrush(g_bgColor[g_menuType]);
-    int hr = min(255, GetRValue(g_bgColor[g_menuType]) + 18);
-    int hg = min(255, GetGValue(g_bgColor[g_menuType]) + 18);
-    int hb = min(255, GetBValue(g_bgColor[g_menuType]) + 18);
-    HBRUSH hovBr = CreateSolidBrush(RGB(hr, hg, hb));
 
     HDC sdc = CreateCompatibleDC(dc);
     HBITMAP sbmp = CreateCompatibleBitmap(dc, ws, ws);
@@ -41,8 +27,14 @@ void DrawPie(HDC hdc)
         int sy = ct + (int)(so * sin(g_sectorStart[i]));
         int ex = ct + (int)(so * cos(g_sectorEnd[i]));
         int ey = ct + (int)(so * sin(g_sectorEnd[i]));
-        SelectObject(sdc, (i == g_hover) ? hovBr : secBr);
+        COLORREF slotCol = g_slotBgColor[g_menuType][i % 8];
+        int hr = min(255, GetRValue(slotCol) + 18);
+        int hg = min(255, GetGValue(slotCol) + 18);
+        int hb = min(255, GetBValue(slotCol) + 18);
+        HBRUSH secBr = CreateSolidBrush((i == g_hover) ? RGB(hr,hg,hb) : slotCol);
+        SelectObject(sdc, secBr);
         Pie(sdc, ct - so, ct - so, ct + so, ct + so, sx, sy, ex, ey);
+        DeleteObject(secBr);
         if (i == g_hover) {
             HPEN hp = CreatePen(PS_SOLID, 2, RGB(255, 255, 255));
             SelectObject(sdc, hp); SelectObject(sdc, GetStockObject(HOLLOW_BRUSH));
@@ -55,7 +47,6 @@ void DrawPie(HDC hdc)
     BLENDFUNCTION sbf = {AC_SRC_OVER, 0, (BYTE)(g_bgAlpha[g_menuType] * 255 / 100), 0};
     AlphaBlend(dc, 0, 0, ws, ws, sdc, 0, 0, ws, ws, sbf);
     SelectObject(sdc, sob); DeleteDC(sdc); DeleteObject(sbmp);
-    DeleteObject(secBr); DeleteObject(hovBr);
 
     DrawGuideLine(dc, ct, ct);
 

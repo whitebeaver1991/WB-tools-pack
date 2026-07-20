@@ -145,14 +145,43 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
 
-    var ms = document.getElementById('menuScaleSlider');
-    var msv = document.getElementById('menuScaleValue');
-    if (ms && msv) ms.addEventListener('input', function() { msv.textContent = this.value; menuScale[curMenu] = parseInt(this.value); triggerAutoSave(); });
+    // Menu scale sliders per type (Pie=0, Quick=1, Wheel=2, Infinite=3)
+    for (var mi = 0; mi < 4; mi++) {
+        (function(idx) {
+            var msEl = document.getElementById('menuScaleSlider' + idx);
+            var msVl = document.getElementById('menuScaleValue' + idx);
+            if (msEl && msVl) msEl.addEventListener('input', function() {
+                msVl.textContent = this.value + '%';
+                menuScale[idx] = parseInt(this.value);
+                triggerAutoSave();
+                showSizePreview(idx, parseInt(this.value));
+            });
+            if (msEl) msEl.addEventListener('change', function() {
+                hideSizePreview();
+            });
+        })(mi);
+    }
 
     var nt = document.getElementById('numpadToggle');
     if (nt) nt.addEventListener('change', function() { numpadEnabled = this.checked; saveSettings(); });
     var wcs = document.getElementById('wheelCountSelect');
     if (wcs) wcs.addEventListener('change', function() { infiniteCount = parseInt(this.value) || 8; saveSettings(); });
+    var qss = document.getElementById('quickStyleSelect');
+    if (qss) {
+        function updateQuickStyleUI() {
+            var isGrid = (parseInt(qss.value) || 0) === 1;
+            var row = document.getElementById('quickCountRow');
+            if (row) row.style.display = isGrid ? 'none' : '';
+            if (isGrid) {
+                quickStyle = 1;
+                quickCount = 14;
+                var qcs = document.getElementById('quickCountSelect');
+                if (qcs) qcs.value = '14';
+            }
+        }
+        qss.addEventListener('change', function() { updateQuickStyleUI(); saveSettings(); renderMenu(); });
+        updateQuickStyleUI();
+    }
     var sm0 = document.getElementById('selectMode0');
     var sm1 = document.getElementById('selectMode1');
     if (sm0) sm0.addEventListener('change', function() { if (this.checked) { selectMode = 0; saveSettings(); } });
@@ -285,6 +314,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('clearAllSlotsBtn').addEventListener('click', clearAllSlots);
     var csb = document.getElementById('cleanSlotsBtn');
     if (csb) csb.addEventListener('click', cleanCrossMenuData);
+
+    // Pair Numpad button
+    var pnb = document.getElementById('pairNumpadBtn');
+    if (pnb) pnb.addEventListener('click', function() { evalScript('triggerNumpadPairing()'); });
 
     // FlowBoard Generate: create wbflow with N random effects
     var fbg = document.getElementById('fbGenBtn');
@@ -441,6 +474,109 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Settings tab switching
+    document.querySelectorAll('.settings-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var target = this.dataset.settingsTab;
+            document.querySelectorAll('.settings-tab').forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            document.querySelectorAll('.settings-tab-content').forEach(function(c) {
+                c.style.display = (c.dataset.settingsTab === target) ? '' : 'none';
+            });
+        });
+    });
+
+    // UI Zoom in settings modal
+    var uzs = document.getElementById('uiZoomSliderSettings');
+    if (uzs) uzs.addEventListener('input', function() {
+        var val = parseInt(this.value) || 100;
+        var uzv = document.getElementById('uiZoomValueSettings');
+        if (uzv) uzv.textContent = val;
+        var zc = document.getElementById('zoomContent');
+        if (zc) zc.style.zoom = (val / 100).toFixed(2);
+        uiZoom[curMenu] = val;
+        triggerAutoSave();
+    });
+
+    // Build slot color grids for Pie/Quick/Wheel tabs (0,1,2)
+    for (var mti = 0; mti < 3; mti++) {
+        (function(mi) {
+            var grid = document.getElementById('slotColorsGrid' + mi);
+            if (!grid) return;
+            grid.innerHTML = '';
+            for (var sci = 0; sci < 8; sci++) {
+                var cell = document.createElement('div');
+                cell.style.cssText = 'display:flex;align-items:center;gap:4px;';
+                var lab = document.createElement('span');
+                lab.textContent = (sci + 1) + ':';
+                lab.style.cssText = 'color:#888;font-size:10px;min-width:14px;';
+                var inp = document.createElement('input');
+                inp.type = 'color';
+                inp.id = 'slotCol' + mi + '_' + sci;
+                inp.value = '#' + g_slotBgColor[mi][sci];
+                inp.style.cssText = 'width:28px;height:22px;padding:0;border:1px solid #555;border-radius:2px;background:none;cursor:pointer;';
+                var txt = document.createElement('span');
+                txt.id = 'slotColTxt' + mi + '_' + sci;
+                txt.textContent = '#' + g_slotBgColor[mi][sci];
+                txt.style.cssText = 'color:#888;font-size:9px;font-family:Consolas;';
+                inp.addEventListener('input', function() {
+                    var parts = this.id.split('_');
+                    var mi2 = parseInt(parts[0].replace('slotCol',''));
+                    var si2 = parseInt(parts[1]);
+                    g_slotBgColor[mi2][si2] = this.value.replace('#','');
+                    var txt2 = document.getElementById('slotColTxt' + mi2 + '_' + si2);
+                    if (txt2) txt2.textContent = this.value;
+                    triggerAutoSave();
+                });
+                cell.appendChild(lab); cell.appendChild(inp); cell.appendChild(txt);
+                grid.appendChild(cell);
+            }
+            // Wire collapsible toggle
+            var headerEl = grid.closest('.collapsible').querySelector('.collapsible-header');
+            if (headerEl) {
+                headerEl.addEventListener('click', function() {
+                    var body = this.parentNode.querySelector('.collapsible-body');
+                    if (body) {
+                        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+                        this.innerHTML = (body.style.display === 'none' ? '&#9654;' : '&#9660;') + this.innerHTML.substr(1);
+                    }
+                });
+            }
+        })(mti);
+    }
+
+    // Wire bg scale/offset sliders
+    var bgSliderIds = [
+        ['pieBgScale','pieBgScaleV'],['pieBgOx','pieBgOxV'],['pieBgOy','pieBgOyV'],
+        ['quickBgScale','quickBgScaleV'],['quickBgOx','quickBgOxV'],['quickBgOy','quickBgOyV'],
+        ['wheelBgScale','wheelBgScaleV'],['wheelBgOx','wheelBgOxV'],['wheelBgOy','wheelBgOyV'],
+        ['infiniteBgScale','infiniteBgScaleV'],['infiniteBgOx','infiniteBgOxV'],['infiniteBgOy','infiniteBgOyV']
+    ];
+    for (var bsi = 0; bsi < bgSliderIds.length; bsi++) {
+        (function(ids) {
+            var el = document.getElementById(ids[0]);
+            var vl = document.getElementById(ids[1]);
+            if (el && vl) {
+                el.addEventListener('input', function() {
+                    vl.textContent = this.value;
+                    triggerAutoSave();
+                });
+            }
+            // Wire collapsible toggles for bg sections
+            var bgHeader = el ? el.closest('.collapsible').querySelector('.collapsible-header') : null;
+            if (bgHeader && !bgHeader._wired) {
+                bgHeader._wired = true;
+                bgHeader.addEventListener('click', function() {
+                    var body = this.parentNode.querySelector('.collapsible-body');
+                    if (body) {
+                        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+                        this.innerHTML = (body.style.display === 'none' ? '&#9654;' : '&#9660;') + this.innerHTML.substr(1);
+                    }
+                });
+            }
+        })(bgSliderIds[bsi]);
+    }
+
     // Settings modal toggle
     var settingsBtn = document.getElementById('settingsBtn');
     var settingsModal = document.getElementById('settingsModal');
@@ -451,6 +587,13 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTriggerDisplay();
             updatePageKeyDisplay();
             updateGlobals();
+            // Sync quickStyle UI
+            var qss = document.getElementById('quickStyleSelect');
+            if (qss) {
+                var isGrid = (parseInt(qss.value) || 0) === 1;
+                var row = document.getElementById('quickCountRow');
+                if (row) row.style.display = isGrid ? 'none' : '';
+            }
         }
         function closeSettings() { settingsModal.style.display = 'none'; }
         settingsBtn.addEventListener('click', openSettings);
@@ -701,9 +844,186 @@ document.getElementById('infModalClose').addEventListener('click', function() {
             document.getElementById('infKeyRec').textContent = '\u5f55\u5236';
         }
     });
-
     } catch(e) {
         var d = document.getElementById('status');
         if (d) d.innerHTML = '<span style="color:#f55;">JS ERR: ' + e.message + '</span>';
     }
+});
+
+// ── Pixel-accurate size preview overlay ──
+var WIN_SIZE_BASE = 1050;
+
+function getMenuPixelSize(idx, pct) {
+    if (idx === 1) {
+        // Quick Grid: fixed 380px
+        var qs = document.getElementById('quickStyleSelect');
+        if (qs && parseInt(qs.value) === 1) return { w: 380, h: 380 };
+        // Quick list: same as Pie
+    }
+    var s = WIN_SIZE_BASE * pct / 100;
+    return { w: Math.round(s), h: Math.round(s) };
+}
+
+function showSizePreview(idx, pct) {
+    var overlay = document.getElementById('sizePreviewOverlay');
+    var canvas = document.getElementById('sizePreviewCanvas');
+    var label = document.getElementById('sizePreviewLabel');
+    var calibrateLabel = document.getElementById('sizePreviewCal');
+    if (!overlay || !canvas) return;
+
+    var size = getMenuPixelSize(idx, pct);
+    var ws = size.w, hs = size.h;
+
+    // Host zoom: use calibration factor from settings (user-tunable)
+    var hostZoom = parseFloat(localStorage.getItem('wb_preview_zoom') || '1.0');
+
+    var cssW = Math.round(ws / hostZoom);
+    var cssH = Math.round(hs / hostZoom);
+    var maxW2 = Math.round(window.innerWidth * 0.9);
+    var maxH2 = Math.round(window.innerHeight * 0.85);
+    var capNote = '';
+    if (cssW > maxW2 || cssH > maxH2) {
+        var fit = Math.min(maxW2 / cssW, maxH2 / cssH);
+        ws = Math.round(ws * fit);
+        hs = Math.round(hs * fit);
+        cssW = Math.round(ws / hostZoom);
+        cssH = Math.round(hs / hostZoom);
+        capNote = ' cap=' + Math.round(fit * 100) + '%';
+    }
+
+    canvas.width = ws;
+    canvas.height = hs;
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, ws, hs);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, ws, hs);
+
+    var cx = ws / 2, cy = hs / 2;
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+
+    if (idx === 0) {
+        // Pie: ring at actual pixel scale
+        var outerR = Math.round(ws / 2 - 8);
+        var innerR = Math.round(outerR * 0.35);
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+        ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
+        ctx.closePath(); ctx.stroke();
+        var n = document.getElementById('pieCountSelect');
+        var sn = n ? parseInt(n.value) : 4;
+        for (var si = 0; si < sn; si++) {
+            var a = -Math.PI / 2 + (si / sn) * Math.PI * 2;
+            ctx.beginPath(); ctx.moveTo(cx + innerR * Math.cos(a), cy + innerR * Math.sin(a));
+            ctx.lineTo(cx + outerR * Math.cos(a), cy + outerR * Math.sin(a)); ctx.stroke();
+        }
+    } else if (idx === 1) {
+        var qs = document.getElementById('quickStyleSelect');
+        var isGrid = qs && parseInt(qs.value) === 1;
+        if (isGrid) {
+            var gw = ws - 20, gh = hs - 20;
+            var gx = (ws - gw) / 2, gy = (hs - gh) / 2;
+            var cols = 4, rows = 5, gap = 3;
+            var cw = (gw - (cols - 1) * gap) / cols;
+            var ch = (gh - (rows - 1) * gap) / rows;
+            for (var r = 0; r < rows; r++) {
+                for (var c = 0; c < cols; c++) {
+                    ctx.strokeRect(gx + c * (cw + gap), gy + r * (ch + gap), cw, ch);
+                }
+            }
+            // Wide cell at row 4 col 0
+            ctx.strokeRect(gx, gy + 4 * (ch + gap), cw * 2 + gap, ch);
+        } else {
+            var n2 = Math.min(pieCount || 4, 9);
+            var qh = Math.round(hs / n2 * 0.7);
+            var qgap = 4;
+            var totalH = n2 * qh + (n2 - 1) * qgap;
+            var qy = cy - totalH / 2;
+            var qw = Math.round(ws * 0.6);
+            var qx = (ws - qw) / 2;
+            for (var ii = 0; ii < n2; ii++)
+                ctx.strokeRect(qx, qy + ii * (qh + qgap), qw, qh);
+        }
+    } else if (idx === 2) {
+        var wr = Math.round(ws / 2 - 20);
+        ctx.beginPath(); ctx.arc(cx, cy, wr, 0, Math.PI * 2); ctx.stroke();
+        var wn = 8;
+        for (var wi = 0; wi < wn; wi++) {
+            var wa = -Math.PI / 2 + (wi / wn) * Math.PI * 2;
+            ctx.beginPath(); ctx.moveTo(cx + wr * Math.cos(wa), cy + wr * Math.sin(wa));
+            ctx.lineTo(cx + (wr + 12) * Math.cos(wa), cy + (wr + 12) * Math.sin(wa));
+            ctx.stroke();
+        }
+    } else if (idx === 3) {
+        var rBase = Math.round(ws * 0.1);
+        var r1 = Math.round(ws * 0.35);
+        var r2 = Math.round(ws / 2 - 8);
+        ctx.beginPath(); ctx.arc(cx, cy, r2, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, r1, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, rBase, 0, Math.PI * 2); ctx.stroke();
+        var sn = 4;
+        var se = document.getElementById('infSectors');
+        if (se) sn = parseInt(se.value);
+        if (isNaN(sn) || sn < 2) sn = 4;
+        for (var si2 = 0; si2 < sn; si2++) {
+            var sa = -Math.PI / 2 + (si2 / sn) * Math.PI * 2;
+            ctx.beginPath(); ctx.moveTo(cx + rBase * Math.cos(sa), cy + rBase * Math.sin(sa));
+            ctx.lineTo(cx + r2 * Math.cos(sa), cy + r2 * Math.sin(sa)); ctx.stroke();
+        }
+    }
+
+    // Crosshair at center
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 6, cy); ctx.lineTo(cx + 6, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6); ctx.stroke();
+
+    // Label with pixel size + zoom
+    label.textContent = size.w + '\u00D7' + size.h + 'px  |  ' + pct + '%'
+        + '  |  zoom=' + hostZoom.toFixed(2) + capNote
+        + '  |  CSS=' + cssW + '\u00D7' + cssH;
+    if (calibrateLabel) {
+        var zd = document.getElementById('calZoomDisplay');
+        if (zd) zd.textContent = hostZoom.toFixed(2);
+    }
+
+    overlay.style.display = 'block';
+    // Close on click
+    overlay.onclick = function() { hideSizePreview(); };
+}
+
+function hideSizePreview() {
+    var overlay = document.getElementById('sizePreviewOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Calibration buttons
+document.addEventListener('click', function(e) {
+    var t = e.target;
+    if (t && t.classList.contains('cal-btn')) {
+        var delta = parseFloat(t.getAttribute('data-delta')) || 0;
+        var cur = parseFloat(localStorage.getItem('wb_preview_zoom') || '1.0');
+        var next = (delta === 0) ? 1.0 : Math.round((cur + delta) * 100) / 100;
+        if (next < 0.5) next = 0.5;
+        if (next > 3.0) next = 3.0;
+        localStorage.setItem('wb_preview_zoom', next.toFixed(2));
+        // Re-trigger preview update
+        var activeTab = document.querySelector('.settings-tab-content[style*="display:block"], .settings-tab-content[style*="display: block"]');
+        if (!activeTab) activeTab = document.querySelector('[data-settings-tab]:not([style*="display:none"])');
+        if (activeTab) {
+            var tabIdx = parseInt(activeTab.getAttribute('data-settings-tab'));
+            if (!isNaN(tabIdx)) {
+                var msEl = document.getElementById('menuScaleSlider' + tabIdx);
+                if (msEl) showSizePreview(tabIdx, parseInt(msEl.value));
+            }
+        }
+    }
+});
+
+// ESC key closes overlay
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') hideSizePreview();
 });

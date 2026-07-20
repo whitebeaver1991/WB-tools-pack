@@ -13,6 +13,9 @@
 - CEP 面板改完 HTML/JS 后必须通过肉眼检查一次所有控件，确保无遗漏
 - **删除 HTML 大段时，务必检查前后标签括号对称性**：删除一段含有开始/结束标签的代码后，往往会在删除位置留下孤立的 `</div>` 或缺少对应的 `<div>`，导致整个页面的布局错乱。删除后手动检查前后 5 行的标签嵌套对齐。
 - **删除 JS 函数时，grep 确认所有调用点也一并删除**：移除 `renderInfinitePreview()` 这类函数时，必须同时删除所有对该函数的引用（包括事件监听器、回调函数内的调用），否则运行时抛出 `ReferenceError`，可能导致整个 CEP 面板白屏。
+- **修改 CEP JS 后，部署前必须用 `node --check` 做语法验证**：`node --check "CEP/WB_PieMenu_Panel/js/main.js"` 会检查括号闭合、语法错误等。所有 4 个 JS 文件（settings.js / pie_ui.js / flowboard.js / main.js）都必须通过检查。**未通过验证不得部署。**
+- **修改 wbflow JS 后同样执行**：`node --check "wbflow/js/flowboard_core.js"` 等。
+- **中英文翻译切换的检查，除非用户单独要求，否则留到用户要求 git commit / push 时再做**，不要在功能开发中途分散精力。
 
 ## 编译命令
 ### Pie Menu AEGP

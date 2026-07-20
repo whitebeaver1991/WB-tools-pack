@@ -572,6 +572,20 @@ h2 {
 }
 .btn-gear:hover { background: #444; color: #ddd; }
 
+/* Small utility button (was missing, defaulted to white bg!) */
+.btn-small {
+    padding: 4px 8px;
+    background: #444;
+    border: 1px solid #666;
+    color: #ccc;
+    border-radius: 2px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-small:hover { background: #555; color: #ddd; }
+.btn-small:active { background: #333; }
+
 /* Slot card grid — auto wrap horizontally */
 #itemsContainer {
     display: grid;
